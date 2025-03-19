@@ -4,27 +4,23 @@
 require_once __DIR__ . '/../includes/db.php'; // Подключаем db.php
 require_once __DIR__ . '/../includes/functions.php'; // Подключаем functions.php
 
-// Обработка поискового запроса (для AJAX)
-if (isset($_GET['search'])) {
-    $searchQuery = trim($_GET['search']); // Получаем поисковый запрос
-    try {
-        if (!empty($searchQuery)) {
-            // Если есть поисковый запрос, фильтруем товары
-            $stmt = $pdo->prepare("SELECT * FROM products WHERE name LIKE :search OR description LIKE :search");
-            $stmt->execute(['search' => "%$searchQuery%"]);
-        } else {
-            // Если запроса нет, выводим все товары
-            $stmt = $pdo->query("SELECT * FROM products");
-        }
-        $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
+// Обработка поискового запроса
+$searchQuery = trim($_GET['search'] ?? ''); // Получаем поисковый запрос
+$products = [];
 
-        // Возвращаем результат в формате JSON
-        header('Content-Type: application/json');
-        echo json_encode($products);
-        exit();
-    } catch (PDOException $e) {
-        die("Ошибка при выполнении запроса: " . $e->getMessage());
+try {
+    if (!empty($searchQuery)) {
+        // Если есть поисковый запрос, фильтруем товары
+        $stmt = $pdo->prepare("SELECT * FROM products WHERE name LIKE :search OR description LIKE :search");
+        $stmt->execute(['search' => "%$searchQuery%"]);
+        $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } else {
+        // Если запроса нет, выводим все товары
+        $stmt = $pdo->query("SELECT * FROM products");
+        $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
+} catch (PDOException $e) {
+    die("Ошибка при выполнении запроса: " . $e->getMessage());
 }
 ?>
 
@@ -34,48 +30,56 @@ if (isset($_GET['search'])) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Главная страница</title>
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Bootstrap Icons (опционально) -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+
+    <!-- Твои собственные стили -->
     <link rel="stylesheet" href="/assets/css/styles.css">
 </head>
 <body>
     <?php include __DIR__ . '/../includes/header.php'; ?>
 
-    <main class="container">
-        <h1>Добро пожаловать в наш маркетплейс!</h1>
-        <p>Здесь вы найдете лучшие товары по выгодным ценам.</p>
-
-        <!-- Поисковая строка -->
-        <form id="search-form" class="search-form">
-            <input type="text" id="search-input" name="search" placeholder="Поиск товаров...">
-            <button type="submit" class="btn">Найти</button>
-        </form>
+    <main class="container mt-4">
+        <h1 class="text-center mb-4">Добро пожаловать в наш маркетплейс!</h1>
+        <p class="text-center lead">Здесь вы найдете лучшие товары по выгодным ценам.</p>
 
         <!-- Секция для отображения товаров -->
         <section class="products">
-            <h2>Товары</h2>
-            <div id="product-list" class="product-list">
-                <?php
-                // По умолчанию отображаем все товары
-                try {
-                    $stmt = $pdo->query("SELECT * FROM products");
-                    $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
-                } catch (PDOException $e) {
-                    die("Ошибка при выполнении запроса: " . $e->getMessage());
-                }
-
-                if (empty($products)): ?>
-                    <p>Товары отсутствуют.</p>
+            <h2 class="mb-3">Товары</h2>
+            <div id="product-list" class="row g-4">
+                <?php if (empty($products)): ?>
+                    <div class="col-12 text-center">
+                        <p class="text-muted">Товары не найдены.</p>
+                    </div>
                 <?php else: ?>
                     <?php foreach ($products as $product): ?>
-                        <div class="product-card">
-                            <?php if (!empty($product['image'])): ?>
-                                <img src="<?= htmlspecialchars($product['image']) ?>" alt="<?= htmlspecialchars($product['name']) ?>" class="product-image">
-                            <?php else: ?>
-                                <img src="/assets/images/no-image.jpg" alt="Нет изображения" class="product-image">
-                            <?php endif; ?>
-                            <h3><?= htmlspecialchars($product['name']) ?></h3>
-                            <p><?= htmlspecialchars($product['description']) ?></p>
-                            <p class="price">Цена: <?= htmlspecialchars($product['price']) ?> руб.</p>
-                            <a href="/pages/product.php?id=<?= $product['id'] ?>" class="btn">Подробнее</a>
+                        <div class="col-md-4 col-lg-3">
+                            <a href="/pages/product.php?id=<?= $product['id'] ?>" class="text-decoration-none text-dark">
+                                <div class="card h-100">
+                                    <?php if (!empty($product['image'])): ?>
+                                        <img src="<?= htmlspecialchars($product['image']) ?>" alt="<?= htmlspecialchars($product['name']) ?>" class="card-img-top product-image">
+                                    <?php else: ?>
+                                        <img src="/assets/images/no-image.jpg" alt="Нет изображения" class="card-img-top product-image">
+                                    <?php endif; ?>
+                                    <div class="card-body d-flex flex-column">
+                                        <h5 class="card-title"><?= htmlspecialchars($product['name']) ?></h5>
+                                        <p class="card-text flex-grow-1"><?= htmlspecialchars($product['description']) ?></p>
+                                        <p class="card-text"><strong>Цена:</strong> <?= htmlspecialchars($product['price']) ?> руб.</p>
+                                        <div class="d-flex gap-2 mt-auto">
+                                            <a href="/pages/cart.php?action=add&id=<?= $product['id'] ?>" class="btn btn-success btn-sm flex-fill">
+                                                <i class="bi bi-cart-plus"></i> В корзину
+                                            </a>
+                                            <a href="/pages/wishlist.php?action=add&id=<?= $product['id'] ?>" class="btn btn-outline-danger btn-sm flex-fill">
+                                                <i class="bi bi-heart"></i> В избранное
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </a>
                         </div>
                     <?php endforeach; ?>
                 <?php endif; ?>
@@ -85,51 +89,7 @@ if (isset($_GET['search'])) {
 
     <?php include __DIR__ . '/../includes/footer.php'; ?>
 
-    <!-- Подключаем JavaScript -->
-    <script>
-        // Функция для обработки поиска
-        function handleSearch(event) {
-            event.preventDefault(); // Отменяем стандартное поведение формы
-
-            const searchQuery = document.getElementById('search-input').value; // Получаем поисковый запрос
-            const productList = document.getElementById('product-list'); // Контейнер для товаров
-
-            // Отправляем AJAX-запрос
-            fetch(`/pages/home.php?search=${encodeURIComponent(searchQuery)}`)
-                .then(response => response.json())
-                .then(products => {
-                    // Очищаем список товаров
-                    productList.innerHTML = '';
-
-                    // Если товары найдены, отображаем их
-                    if (products.length > 0) {
-                        products.forEach(product => {
-                            const productCard = `
-                                <div class="product-card">
-                                    ${product.image ? `<img src="${product.image}" alt="${product.name}" class="product-image">` : `<img src="/assets/images/no-image.jpg" alt="Нет изображения" class="product-image">`}
-                                    <h3>${product.name}</h3>
-                                    <p>${product.description}</p>
-                                    <p class="price">Цена: ${product.price} руб.</p>
-                                    <a href="/pages/product.php?id=${product.id}" class="btn">Подробнее</a>
-                                </div>
-                            `;
-                            productList.innerHTML += productCard;
-                        });
-                    } else {
-                        // Если товары не найдены, выводим сообщение
-                        productList.innerHTML = '<p>Товары не найдены.</p>';
-                    }
-                })
-                .catch(error => {
-                    console.error('Ошибка при выполнении запроса:', error);
-                });
-        }
-
-        // Назначаем обработчик события для формы
-        document.getElementById('search-form').addEventListener('submit', handleSearch);
-
-        // Обработка ввода в реальном времени
-        document.getElementById('search-input').addEventListener('input', handleSearch);
-    </script>
+    <!-- Bootstrap JS и зависимости -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

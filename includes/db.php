@@ -1,11 +1,11 @@
 <?php
 // includes/db.php
 
-$host = '0.0.0.0'; 
-$dbname = '   '; 
-$username = '  ';
-$password = '  ';
-$port = '  '; // 
+$host = '127.0.0.1'; 
+$dbname = 'alexis222w_marke'; 
+$username = 'alexis222w_marke';
+$password = 'LKZSMVG*LZB9MrUP';
+$port = '3308'; // 
 
 try {
     $pdo = new PDO("mysql:host=$host;port=$port;dbname=$dbname", $username, $password);
