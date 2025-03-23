@@ -1,6 +1,8 @@
 <?php
 // pages/logout.php
 
-require '../includes/functions.php'; // Подключаем функции
+session_start();
+require '../includes/functions.php'; // Подключение функций
+
 logout(); // Вызываем функцию выхода
 ?>

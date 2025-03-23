@@ -10,12 +10,27 @@ session_start();
 require 'includes/db.php';
 require 'includes/functions.php';
 
-// Роутинг
+// Определение базовых путей
+define('BASE_PATH', __DIR__);
+define('PAGES_PATH', BASE_PATH . '/pages');
+
+// Маршруты
+$routes = [
+    'home' => 'home.php',
+    'product' => 'product.php',
+    'cart' => 'cart.php',
+    'checkout' => 'checkout.php',
+    'login' => 'login.php',
+    'register' => 'register.php',
+];
+
+// Определение текущей страницы
 $page = $_GET['page'] ?? 'home';
 
-$allowed_pages = ['home', 'product', 'cart', 'checkout', 'login', 'register'];
-if (in_array($page, $allowed_pages)) {
-    require "pages/{$page}.php";
+// Проверка маршрута
+if (array_key_exists($page, $routes)) {
+    require PAGES_PATH . '/' . $routes[$page];
 } else {
-    echo "Страница не найдена.";
+    error_log("Попытка доступа к несуществующей странице: {$page}");
+    require PAGES_PATH . '/error.php';
 }

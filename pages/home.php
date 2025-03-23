@@ -44,8 +44,34 @@ try {
     <?php include __DIR__ . '/../includes/header.php'; ?>
 
     <main class="container mt-4">
-        <h1 class="text-center mb-4">Добро пожаловать в наш маркетплейс!</h1>
-        <p class="text-center lead">Здесь вы найдете лучшие товары по выгодным ценам.</p>
+
+        <!-- Слайдер с рекламой -->
+        <div id="carouselExampleIndicators" class="carousel slide mb-4" data-bs-ride="carousel">
+            <div class="carousel-indicators">
+                <button type="button" data-bs-target="#carouselExampleIndicators" data-bs-slide-to="0" class="active" aria-current="true" aria-label="Slide 1"></button>
+                <button type="button" data-bs-target="#carouselExampleIndicators" data-bs-slide-to="1" aria-label="Slide 2"></button>
+                <button type="button" data-bs-target="#carouselExampleIndicators" data-bs-slide-to="2" aria-label="Slide 3"></button>
+            </div>
+            <div class="carousel-inner">
+                <div class="carousel-item active">
+                    <img src="/assets/images/yan.webp" class="d-block w-100 rounded-4" alt="Реклама 1">
+                </div>
+                <div class="carousel-item">
+                    <img src="/assets/images/hoff.webp" class="d-block w-100 rounded-4" alt="Реклама 2">
+                </div>
+                <div class="carousel-item">
+                    <img src="/assets/images/mv.webp" class="d-block w-100 rounded-4" alt="Реклама 3">
+                </div>
+            </div>
+            <button class="carousel-control-prev" type="button" data-bs-target="#carouselExampleIndicators" data-bs-slide="prev">
+                <span class="carousel-control-prev-icon rounded-circle p-3" aria-hidden="true"></span>
+                <span class="visually-hidden">Предыдущий</span>
+            </button>
+            <button class="carousel-control-next" type="button" data-bs-target="#carouselExampleIndicators" data-bs-slide="next">
+                <span class="carousel-control-next-icon rounded-circle p-3" aria-hidden="true"></span>
+                <span class="visually-hidden">Следующий</span>
+            </button>
+        </div>
 
         <!-- Секция для отображения товаров -->
         <section class="products">
@@ -60,10 +86,10 @@ try {
                         <div class="col-md-4 col-lg-3">
                             <a href="/pages/product.php?id=<?= $product['id'] ?>" class="text-decoration-none text-dark">
                                 <div class="card h-100">
-                                    <?php if (!empty($product['image'])): ?>
-                                        <img src="<?= htmlspecialchars($product['image']) ?>" alt="<?= htmlspecialchars($product['name']) ?>" class="card-img-top product-image">
+                                    <?php if (!empty($product['image_url'])): ?>
+                                        <img src="<?= htmlspecialchars($product['image_url']) ?>" alt="<?= htmlspecialchars($product['name']) ?>" class="card-img-top rounded-3">
                                     <?php else: ?>
-                                        <img src="/assets/images/no-image.jpg" alt="Нет изображения" class="card-img-top product-image">
+                                        <img src="/assets/images/no-image.jpg" alt="Нет изображения" class="card-img-top rounded-3">
                                     <?php endif; ?>
                                     <div class="card-body d-flex flex-column">
                                         <h5 class="card-title"><?= htmlspecialchars($product['name']) ?></h5>
