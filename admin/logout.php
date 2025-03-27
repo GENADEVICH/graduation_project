@@ -1,7 +1,8 @@
 <?php
-// admin/logout.php
+// logout.php
 
-session_start();
+session_start(); // Запускаем сессию
 session_destroy(); // Уничтожаем сессию
-redirect('/admin/login.php'); // Перенаправляем на страницу входа
+header("Location: /admin/login.php"); // Перенаправляем на страницу входа
+exit;
 ?>

@@ -2,9 +2,9 @@
 // includes/db.php
 
 $host = '127.0.0.1'; 
-$dbname = '*******'; 
-$username = '****';
-$password = '*********';
+$dbname = 'alexis222w_marke'; 
+$username = 'alexis222w_marke';
+$password = 'G8T!J6YK5U97XYqE';
 $port = '3308'; // 
 
 try {
