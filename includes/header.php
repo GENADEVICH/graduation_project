@@ -33,9 +33,14 @@ function renderCategoryMenu($categories) {
     echo '<ul class="dropdown-menu">';
     foreach ($categories as $category) {
         echo '<li>';
-        echo '<a class="dropdown-item" href="/category/category.php?id=' . $category['id'] . '">' . htmlspecialchars($category['name']) . '</a>';
+        // Проверяем, есть ли у категории дочерние элементы
         if (!empty($category['children'])) {
+            // Для родительских категорий используем ссылку на category.php
+            echo '<a class="dropdown-item" href="/category/category.php?id=' . $category['id'] . '">' . htmlspecialchars($category['name']) . '</a>';
             renderCategoryMenu($category['children']); // Рекурсивный вызов для подкатегорий
+        } else {
+            // Для подкатегорий (листьев) используем ссылку на products.php
+            echo '<a class="dropdown-item" href="/pages/products.php?id=' . $category['id'] . '">' . htmlspecialchars($category['name']) . '</a>';
         }
         echo '</li>';
     }

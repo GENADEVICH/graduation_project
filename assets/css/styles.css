@@ -1,3 +1,9 @@
+/* Основные стили для выпадающего меню */
+.dropdown-menu {
+    border-radius: 4px;
+    padding: 0.5rem 0;
+}
+
 /* Стили для вложенных выпадающих меню */
 .dropdown-menu > li > .dropdown-menu {
     display: none;
@@ -5,8 +11,12 @@
     left: 100%;
     top: 0;
     margin-top: -8px; /* Корректировка позиции */
+    z-index: 1000; /* Убедитесь, что меню выше других элементов */
+    min-width: 200px; /* Минимальная ширина меню */
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Тень для эффекта глубины */
 }
 
+/* Показ вложенного меню при наведении */
 .dropdown-menu > li:hover > .dropdown-menu {
     display: block;
 }
@@ -14,4 +24,15 @@
 /* Убираем стрелку для вложенных выпадающих меню */
 .dropdown-submenu > a::after {
     display: none;
+}
+
+/* Улучшение внешнего вида пунктов меню */
+.dropdown-item {
+    padding: 0.5rem 1rem;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.dropdown-item:hover {
+    background-color: #f8f9fa;
+    color: #007bff;
 }

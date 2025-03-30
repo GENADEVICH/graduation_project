@@ -72,12 +72,33 @@ try {
     <main class="container mt-4">
         <h1 class="mb-3"><?= htmlspecialchars($category['name']) ?></h1>
 
-        <!-- Изображение категории
-        <?php if (!empty($category['image_url'])): ?>
-            <div class="mb-4 text-center">
-                <img src="<?= htmlspecialchars($category['image_url']) ?>" alt="<?= htmlspecialchars($category['name']) ?>" class="img-fluid rounded-3" style="max-height: 300px;">
+        <!-- Слайдер с рекламой -->
+        <div id="carouselExampleIndicators" class="carousel slide mb-4" data-bs-ride="carousel">
+            <div class="carousel-indicators">
+                <button type="button" data-bs-target="#carouselExampleIndicators" data-bs-slide-to="0" class="active" aria-current="true" aria-label="Slide 1"></button>
+                <button type="button" data-bs-target="#carouselExampleIndicators" data-bs-slide-to="1" aria-label="Slide 2"></button>
+                <button type="button" data-bs-target="#carouselExampleIndicators" data-bs-slide-to="2" aria-label="Slide 3"></button>
             </div>
-        <?php endif; ?> -->
+            <div class="carousel-inner">
+                <div class="carousel-item active">
+                    <img src="/assets/images/appleskid.webp" class="d-block w-100 rounded-4" alt="Реклама 1">
+                </div>
+                <div class="carousel-item">
+                    <img src="/assets/images/xiaomiskid.webp" class="d-block w-100 rounded-4" alt="Реклама 2">
+                </div>
+                <div class="carousel-item">
+                    <img src="/assets/images/pocoskid.webp" class="d-block w-100 rounded-4" alt="Реклама 3">
+                </div>
+            </div>
+            <button class="carousel-control-prev" type="button" data-bs-target="#carouselExampleIndicators" data-bs-slide="prev">
+                <span class="carousel-control-prev-icon rounded-circle p-3" aria-hidden="true"></span>
+                <span class="visually-hidden">Предыдущий</span>
+            </button>
+            <button class="carousel-control-next" type="button" data-bs-target="#carouselExampleIndicators" data-bs-slide="next">
+                <span class="carousel-control-next-icon rounded-circle p-3" aria-hidden="true"></span>
+                <span class="visually-hidden">Следующий</span>
+            </button>
+        </div>
 
         <!-- Подкатегории -->
         <?php if (!empty($subcategories)): ?>
@@ -86,7 +107,7 @@ try {
                 <div class="row">
                     <?php foreach ($subcategories as $subcategory): ?>
                         <div class="col-md-4 col-lg-3 mb-3">
-                            <a href="/category/category.php?id=<?= $subcategory['id'] ?>" class="text-decoration-none text-dark">
+                            <a href="/pages/products.php?id=<?= $subcategory['id'] ?>" class="text-decoration-none text-dark">
                                 <div class="card h-100">
                                     <?php if (!empty($subcategory['image_url'])): ?>
                                         <img src="<?= htmlspecialchars($subcategory['image_url']) ?>" alt="<?= htmlspecialchars($subcategory['name']) ?>" class="card-img-top rounded-3">
