@@ -46,6 +46,21 @@ function renderCategoryMenu($categories) {
     }
     echo '</ul>';
 }
+
+// Получение количества товаров в корзине и избранном
+function getCartCount($pdo, $userId) {
+    $stmt = $pdo->prepare("SELECT SUM(quantity) AS total FROM cart WHERE user_id = ?");
+    $stmt->execute([$userId]);
+    $result = $stmt->fetch(PDO::FETCH_ASSOC);
+    return $result['total'] ?? 0;
+}
+
+function getWishlistCount($pdo, $userId) {
+    $stmt = $pdo->prepare("SELECT COUNT(*) AS total FROM wishlist WHERE user_id = ?");
+    $stmt->execute([$userId]);
+    $result = $stmt->fetch(PDO::FETCH_ASSOC);
+    return $result['total'] ?? 0;
+}
 ?>
 <!DOCTYPE html>
 <html lang="ru">
@@ -101,17 +116,17 @@ function renderCategoryMenu($categories) {
                 <a href="/pages/orders.php" class="text-white text-decoration-none">Заказы</a>
                 <a href="/pages/wishlist.php" class="text-white text-decoration-none position-relative">
                     Избранное
-                    <?php if (!empty($_SESSION['wishlist'])): ?>
+                    <?php if (isLoggedIn()): ?>
                         <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-                            <?= count($_SESSION['wishlist']) ?>
+                            <?= getWishlistCount($pdo, $_SESSION['user_id']) ?>
                         </span>
                     <?php endif; ?>
                 </a>
                 <a href="/pages/cart.php" class="text-white text-decoration-none position-relative">
                     Корзина
-                    <?php if (!empty($_SESSION['cart'])): ?>
+                    <?php if (isLoggedIn()): ?>
                         <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-                            <?= count($_SESSION['cart']) ?>
+                            <?= getCartCount($pdo, $_SESSION['user_id']) ?>
                         </span>
                     <?php endif; ?>
                 </a>
