@@ -55,6 +55,7 @@ try {
     <?php include __DIR__ . '/../includes/header.php'; ?>
 
     <main class="container mt-4">
+    <div style="height: 1220px">
         <h2><?= $is_admin ? 'Все заказы' : 'Мои заказы' ?></h2>
 
         <?php if (empty($orders)): ?>
@@ -96,6 +97,7 @@ try {
                 </tbody>
             </table>
         <?php endif; ?>
+        </div>
     </main>
 
     <?php include __DIR__ . '/../includes/footer.php'; ?>

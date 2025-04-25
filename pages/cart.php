@@ -43,7 +43,7 @@ if ($action === 'add' && $product_id) {
 
 // Получение товаров из корзины
 $stmt = $pdo->prepare("
-    SELECT p.id, p.name, p.price, p.image_url, c.quantity
+    SELECT p.id, p.name, p.price, p.main_image, c.quantity
     FROM cart c
     JOIN products p ON c.product_id = p.id
     WHERE c.user_id = ?
@@ -102,8 +102,8 @@ foreach ($cartItems as $item) {
                             <?php foreach ($cartItems as $item): ?>
                                 <tr>
                                     <td>
-                                        <?php if (!empty($item['image'])): ?>
-                                            <img src="<?= htmlspecialchars($item['image']) ?>" alt="<?= htmlspecialchars($item['name']) ?>" class="img-fluid rounded" style="max-width: 50px;">
+                                        <?php if (!empty($item['main_image'])): ?>
+                                            <img src="<?= htmlspecialchars($item['main_image']) ?>" alt="<?= htmlspecialchars($item['name']) ?>" class="img-fluid rounded" style="max-width: 50px;">
                                         <?php else: ?>
                                             <img src="/assets/images/no-image.jpg" alt="Нет изображения" class="img-fluid rounded" style="max-width: 50px;">
                                         <?php endif; ?>

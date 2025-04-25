@@ -18,7 +18,7 @@ $order = $_GET['order'] ?? 'ASC'; // Направление сортировки
 $search = $_GET['search'] ?? ''; // Поисковый запрос
 
 // SQL-запрос для получения товаров
-$query = "SELECT id, name, description, price, category_id, image_url FROM products WHERE 1=1";
+$query = "SELECT id, name, description, price, category_id, main_image FROM products WHERE 1=1";
 
 // Добавление поиска
 if (!empty($search)) {
@@ -94,8 +94,8 @@ $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
                             <td><?= htmlspecialchars($product['price']) ?> ₽</td>
                             <td><?= htmlspecialchars($product['category_id']) ?></td>
                             <td>
-                                <?php if (!empty($product['image_url'])): ?>
-                                    <img src="<?= htmlspecialchars($product['image_url']) ?>" alt="Изображение товара" width="50">
+                                <?php if (!empty($product['main_image'])): ?>
+                                    <img src="<?= htmlspecialchars($product['main_image']) ?>" alt="Изображение товара" width="50">
                                 <?php else: ?>
                                     <span>Нет изображения</span>
                                 <?php endif; ?>

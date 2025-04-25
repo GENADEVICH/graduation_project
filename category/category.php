@@ -27,24 +27,16 @@ try {
     $stmt->execute(['parent_id' => $categoryId]);
     $subcategories = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    // Получаем популярные бренды текущей категории
+    // Получаем популярные бренды текущей категории (через связующую таблицу)
     $stmt = $pdo->prepare("
-        SELECT b.id, b.name
+        SELECT b.id, b.name, b.logo_url
         FROM brands b
-        WHERE b.category_id = :category_id
+        INNER JOIN brand_category bc ON b.id = bc.brand_id
+        WHERE bc.category_id = :category_id
         ORDER BY b.name ASC
-        LIMIT 5
     ");
     $stmt->execute(['category_id' => $categoryId]);
     $brands = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-    // Получаем товары текущей категории (если нет подкатегорий)
-    $products = [];
-    if (empty($subcategories)) {
-        $stmt = $pdo->prepare("SELECT * FROM products WHERE category_id = :category_id");
-        $stmt->execute(['category_id' => $categoryId]);
-        $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    }
 } catch (PDOException $e) {
     die("Ошибка при выполнении запроса: " . $e->getMessage());
 }
@@ -100,7 +92,7 @@ try {
             </button>
         </div>
 
-        <!-- Подкатегории -->
+        <!-- Популярные категории -->
         <?php if (!empty($subcategories)): ?>
             <section class="mb-4">
                 <h2 class="mb-3">Популярные категории</h2>
@@ -125,57 +117,42 @@ try {
             </section>
         <?php endif; ?>
 
-        <!-- Популярные бренды -->
+        <!-- Горизонтальный слайдер брендов -->
         <?php if (!empty($brands)): ?>
             <section class="mb-4">
                 <h2 class="mb-3">Популярные бренды</h2>
-                <div class="d-flex gap-3 flex-wrap">
-                    <?php foreach ($brands as $brand): ?>
-                        <a href="/pages/brand.php?id=<?= $brand['id'] ?>" class="btn btn-outline-primary">
-                            <?= htmlspecialchars($brand['name']) ?>
-                        </a>
-                    <?php endforeach; ?>
-                </div>
-            </section>
-        <?php endif; ?>
-
-        <!-- Товары -->
-        <?php if (!empty($products)): ?>
-            <section class="products">
-                <h2 class="mb-3">Товары</h2>
-                <div id="product-list" class="row g-4">
-                    <?php foreach ($products as $product): ?>
-                        <div class="col-md-4 col-lg-3">
-                            <a href="/pages/product.php?id=<?= $product['id'] ?>" class="text-decoration-none text-dark">
-                                <div class="card h-100">
-                                    <?php if (!empty($product['image_url'])): ?>
-                                        <img src="<?= htmlspecialchars($product['image_url']) ?>" alt="<?= htmlspecialchars($product['name']) ?>" class="card-img-top rounded-3">
-                                    <?php else: ?>
-                                        <img src="/assets/images/no-image.jpg" alt="Нет изображения" class="card-img-top rounded-3">
-                                    <?php endif; ?>
-                                    <div class="card-body d-flex flex-column">
-                                        <h5 class="card-title"><?= htmlspecialchars($product['name']) ?></h5>
-                                        <p class="card-text flex-grow-1"><?= htmlspecialchars($product['description']) ?></p>
-                                        <p class="card-text"><strong>Цена:</strong> <?= htmlspecialchars($product['price']) ?> руб.</p>
-                                        <div class="d-flex gap-2 mt-auto">
-                                            <a href="/pages/cart.php?action=add&id=<?= $product['id'] ?>" class="btn btn-success btn-sm flex-fill">
-                                                <i class="bi bi-cart-plus"></i> В корзину
-                                            </a>
-                                            <a href="/pages/wishlist.php?action=add&id=<?= $product['id'] ?>" class="btn btn-outline-danger btn-sm flex-fill">
-                                                <i class="bi bi-heart"></i> В избранное
+                <div id="brand-slider" class="carousel slide" data-bs-ride="carousel">
+                    <div class="carousel-inner">
+                        <?php $chunkedBrands = array_chunk($brands, 5); // Разделяем бренды на группы по 5 ?>
+                        <?php foreach ($chunkedBrands as $index => $brandChunk): ?>
+                            <div class="carousel-item <?= $index === 0 ? 'active' : '' ?>">
+                                <div class="d-flex gap-3">
+                                    <?php foreach ($brandChunk as $brand): ?>
+                                        <div class="brand-card text-center">
+                                            <a href="/pages/brand.php?id=<?= $brand['id'] ?>" class="text-decoration-none text-dark">
+                                                <?php if (!empty($brand['logo_url'])): ?>
+                                                    <img src="<?= htmlspecialchars($brand['logo_url']) ?>" alt="<?= htmlspecialchars($brand['name']) ?>" class="brand-logo rounded-3">
+                                                <?php else: ?>
+                                                    <img src="/assets/images/no-image.jpg" alt="Нет изображения" class="brand-logo rounded-3">
+                                                <?php endif; ?>
+                                                <p class="mt-2 mb-0"><?= htmlspecialchars($brand['name']) ?></p>
                                             </a>
                                         </div>
-                                    </div>
+                                    <?php endforeach; ?>
                                 </div>
-                            </a>
-                        </div>
-                    <?php endforeach; ?>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                    <button class="carousel-control-prev" type="button" data-bs-target="#brand-slider" data-bs-slide="prev">
+                        <span class="carousel-control-prev-icon rounded-circle p-3" aria-hidden="true"></span>
+                        <span class="visually-hidden">Предыдущий</span>
+                    </button>
+                    <button class="carousel-control-next" type="button" data-bs-target="#brand-slider" data-bs-slide="next">
+                        <span class="carousel-control-next-icon rounded-circle p-3" aria-hidden="true"></span>
+                        <span class="visually-hidden">Следующий</span>
+                    </button>
                 </div>
             </section>
-        <?php elseif (empty($subcategories)): ?>
-            <div class="col-12 text-center">
-                <p class="text-muted">Товары в этой категории не найдены.</p>
-            </div>
         <?php endif; ?>
     </main>
 

@@ -74,7 +74,22 @@ function getWishlistCount($pdo, $userId) {
     <!-- Bootstrap Icons -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
     <!-- Стили -->
-    <link rel="stylesheet" href="/css/styles.css">
+    <style>
+        /* Стиль для фиксированной шапки */
+        header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            z-index: 1000; /* Чтобы шапка была поверх других элементов */
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Добавляем тень для лучшего визуального эффекта */
+        }
+
+        /* Отступ для основного контента, чтобы он не скрывался под шапкой */
+        body {
+            padding-top: 80px; /* Высота шапки + немного дополнительного пространства */
+        }
+    </style>
 </head>
 <body>
     <header class="bg-primary text-white py-3">

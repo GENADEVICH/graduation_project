@@ -36,3 +36,52 @@
     background-color: #f8f9fa;
     color: #007bff;
 }
+
+/* Стиль для фиксированной шапки */
+header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 1000; /* Чтобы шапка была поверх других элементов */
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Добавляем тень для лучшего визуального эффекта */
+}
+
+/* Отступ для основного контента, чтобы он не скрывался под шапкой */
+body {
+    padding-top: 80px; /* Высота шапки + немного дополнительного пространства */
+}
+
+@media (max-width: 768px) {
+    .thumbnail {
+        width: 60px;
+        height: 60px;
+    }
+}
+
+/* Стили для карточек брендов */
+.brand-card {
+    width: 120px;
+    flex-shrink: 0;
+    text-align: center;
+}
+
+.brand-logo {
+    width: 100px;
+    height: 100px;
+    object-fit: cover;
+    margin: 0 auto;
+    border-radius: 10px;
+}
+
+/* Стили для слайдера */
+#brand-slider .carousel-inner {
+    display: flex;
+    align-items: center;
+}
+
+#brand-slider .carousel-item {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+}

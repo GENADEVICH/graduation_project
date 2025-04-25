@@ -154,26 +154,28 @@ try {
                     <div class="row">
                         <?php foreach ($products as $product): ?>
                             <div class="col-md-4 mb-4">
-                                <div class="card h-100">
-                                    <?php if (!empty($product['image_url'])): ?>
-                                        <img src="<?= htmlspecialchars($product['image_url']) ?>" alt="<?= htmlspecialchars($product['name']) ?>" class="card-img-top">
-                                    <?php else: ?>
-                                        <img src="/assets/images/no-image.jpg" alt="Нет изображения" class="card-img-top">
-                                    <?php endif; ?>
-                                    <div class="card-body d-flex flex-column">
-                                        <h5 class="card-title"><?= htmlspecialchars($product['name']) ?></h5>
-                                        <p class="card-text flex-grow-1"><?= htmlspecialchars($product['description']) ?></p>
-                                        <p class="card-text text-primary"><strong>Цена:</strong> <?= htmlspecialchars($product['price']) ?> руб.</p>
-                                        <div class="d-flex gap-2 mt-auto">
-                                            <a href="/pages/cart.php?action=add&id=<?= $product['id'] ?>" class="btn btn-success btn-sm flex-fill">
-                                                <i class="bi bi-cart-plus"></i> В корзину
-                                            </a>
-                                            <a href="/pages/wishlist.php?action=add&id=<?= $product['id'] ?>" class="btn btn-outline-danger btn-sm flex-fill">
-                                                <i class="bi bi-heart"></i> В избранное
-                                            </a>
+                                <a href="/pages/product.php?id=<?= $product['id'] ?>" class="text-decoration-none text-dark">
+                                    <div class="card h-100">
+                                        <?php if (!empty($product['main_image'])): ?>
+                                            <img src="<?= htmlspecialchars($product['main_image']) ?>" alt="<?= htmlspecialchars($product['name']) ?>" class="card-img-top">
+                                        <?php else: ?>
+                                            <img src="/assets/images/no-image.jpg" alt="Нет изображения" class="card-img-top">
+                                        <?php endif; ?>
+                                        <div class="card-body d-flex flex-column">
+                                            <h5 class="card-title"><?= htmlspecialchars($product['name']) ?></h5>
+                                            <p class="card-text flex-grow-1"><?= htmlspecialchars($product['description']) ?></p>
+                                            <p class="card-text text-primary"><strong>Цена:</strong> <?= htmlspecialchars($product['price']) ?> руб.</p>
+                                            <div class="d-flex gap-2 mt-auto">
+                                                <a href="/pages/cart.php?action=add&id=<?= $product['id'] ?>" class="btn btn-success btn-sm flex-fill">
+                                                    <i class="bi bi-cart-plus"></i> В корзину
+                                                </a>
+                                                <a href="/pages/wishlist.php?action=add&id=<?= $product['id'] ?>" class="btn btn-outline-danger btn-sm flex-fill">
+                                                    <i class="bi bi-heart"></i> В избранное
+                                                </a>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
+                                </a>
                             </div>
                         <?php endforeach; ?>
                     </div>

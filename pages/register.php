@@ -100,7 +100,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <form method="POST" class="text-start">
                             <!-- Имя пользователя -->
                             <div class="mb-3">
-                                <label for="username" class="form-label">Имя пользователя:</label>
+                                <label for="username" class="form-label">Логин:</label>
                                 <input type="text" name="username" id="username" class="form-control" value="<?= htmlspecialchars($username) ?>" placeholder="Введите имя пользователя" required>
                                 <?php if (!empty($errors['username'])): ?>
                                     <div class="text-danger small"><?= htmlspecialchars($errors['username']) ?></div>

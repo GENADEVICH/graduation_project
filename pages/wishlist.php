@@ -33,7 +33,7 @@ if ($action === 'add' && $product_id) {
 
 // Получение товаров из списка желаний
 $stmt = $pdo->prepare("
-    SELECT p.id, p.name, p.price, p.image_url, p.description
+    SELECT p.id, p.name, p.price, p.main_image, p.description
     FROM wishlist w
     JOIN products p ON w.product_id = p.id
     WHERE w.user_id = ?
@@ -74,8 +74,8 @@ $wishlistItems = $stmt->fetchAll(PDO::FETCH_ASSOC);
                     <?php foreach ($wishlistItems as $item): ?>
                         <div class="col">
                             <div class="card h-100">
-                                <?php if (!empty($item['image'])): ?>
-                                    <img src="<?= htmlspecialchars($item['image']) ?>" alt="<?= htmlspecialchars($item['name']) ?>" class="card-img-top rounded" style="height: 200px; object-fit: cover;">
+                                <?php if (!empty($item['main_image'])): ?>
+                                    <img src="<?= htmlspecialchars($item['main_image']) ?>" alt="<?= htmlspecialchars($item['name']) ?>" class="card-img-top rounded" style="height: 200px; object-fit: cover;">
                                 <?php else: ?>
                                     <img src="/assets/images/no-image.jpg" alt="Нет изображения" class="card-img-top rounded" style="height: 200px; object-fit: cover;">
                                 <?php endif; ?>

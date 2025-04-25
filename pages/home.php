@@ -86,8 +86,8 @@ try {
                         <div class="col-md-4 col-lg-3">
                             <a href="/pages/product.php?id=<?= $product['id'] ?>" class="text-decoration-none text-dark">
                                 <div class="card h-100">
-                                    <?php if (!empty($product['image_url'])): ?>
-                                        <img src="<?= htmlspecialchars($product['image_url']) ?>" alt="<?= htmlspecialchars($product['name']) ?>" class="card-img-top rounded-3">
+                                    <?php if (!empty($product['main_image'])): ?>
+                                        <img src="<?= htmlspecialchars($product['main_image']) ?>" alt="<?= htmlspecialchars($product['name']) ?>" class="card-img-top rounded-3">
                                     <?php else: ?>
                                         <img src="/assets/images/no-image.jpg" alt="Нет изображения" class="card-img-top rounded-3">
                                     <?php endif; ?>
