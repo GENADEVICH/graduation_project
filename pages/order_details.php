@@ -33,7 +33,7 @@ try {
     }
 
     // Получаем товары в заказе
-    $stmt = $pdo->prepare("SELECT oi.*, p.name, p.image_url FROM order_items oi JOIN products p ON oi.product_id = p.id WHERE oi.order_id = ?");
+    $stmt = $pdo->prepare("SELECT oi.*, p.name, p.main_image FROM order_items oi JOIN products p ON oi.product_id = p.id WHERE oi.order_id = ?");
     $stmt->execute([$order_id]);
     $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
 } catch (PDOException $e) {
@@ -64,7 +64,7 @@ try {
         <h2>Детали заказа #<?= htmlspecialchars($order['id']) ?></h2>
 
         <div class="mb-4">
-            <p><strong>Дата:</strong> <?= htmlspecialchars($order['created_at']) ?></p>
+            <p><strong>Дата:</strong> <?= htmlspecialchars($order['order_date']) ?></p>
             <p><strong>Статус:</strong>
                 <span class="badge 
                     <?= $order['status'] === 'pending' ? 'bg-warning' : '' ?>
