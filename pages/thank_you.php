@@ -54,7 +54,7 @@ $orderItems = $stmt->fetchAll(PDO::FETCH_ASSOC);
         <div class="text-center">
             <p><strong>Информация о заказе:</strong></p>
             <p>Адрес доставки: <?= htmlspecialchars($order['shipping_address']) ?></p>
-            <p>Общая сумма: <?= htmlspecialchars($order['total_amount']) ?> руб.</p>
+            <p>Общая сумма: <?= htmlspecialchars($order['total_price']) ?> руб.</p>
             <p>Статус: <?= htmlspecialchars($order['status']) ?></p>
         </div>
         <h3 class="text-center mt-4">Товары в заказе:</h3>

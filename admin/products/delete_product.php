@@ -1,22 +1,29 @@
 <?php
-// admin/products/delete_product.php
-
 session_start();
-require '../../includes/functions.php';
 require '../../includes/db.php';
 
-// Проверка авторизации
-if (!isset($_SESSION['admin_id'])) {
-    redirect('/admin/login.php');
-}
 
-// Получение ID товара из URL
 $product_id = $_GET['id'] ?? null;
 
-if ($product_id) {
-    $stmt = $pdo->prepare("DELETE FROM products WHERE id = ?");
-    $stmt->execute([$product_id]);
+if (!$product_id || !is_numeric($product_id)) {
+    header('Location: products_list.php');
+    exit;
 }
 
-redirect('/admin/products/products_list.php');
-?>
+// Проверяем, существует ли товар
+$stmt = $pdo->prepare("SELECT id FROM products WHERE id = ?");
+$stmt->execute([$product_id]);
+if (!$stmt->fetch()) {
+    header('Location: products_list.php');
+    exit;
+}
+
+// Удаляем товар
+try {
+    $pdo->prepare("DELETE FROM products WHERE id = ?")->execute([$product_id]);
+} catch (PDOException $e) {
+    die("Ошибка при удалении: " . $e->getMessage());
+}
+
+header('Location: products_list.php?status=deleted');
+exit;

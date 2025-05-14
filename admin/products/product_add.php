@@ -1,120 +1,127 @@
 <?php
-// admin/products/add_product.php
-
 session_start();
-require '../../includes/functions.php';
 require '../../includes/db.php';
 
-// Проверка авторизации
-if (!isset($_SESSION['admin_id'])) {
-    redirect('/admin/login.php');
-}
-
 $errors = [];
+$success = '';
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $name = trim($_POST['name']);
-    $description = trim($_POST['description']);
-    $price = trim($_POST['price']);
-    $category_id = trim($_POST['category_id']);
-    $image = '';
-
-    // Валидация
-    if (empty($name)) {
-        $errors['name'] = "Название обязательно.";
-    }
-
-    if (empty($price) || !is_numeric($price) || $price <= 0) {
-        $errors['price'] = "Цена должна быть числом больше 0.";
-    }
-
-    if (empty($category_id) || !is_numeric($category_id)) {
-        $errors['category_id'] = "Категория обязательна.";
-    }
-
-    // Обработка изображения
-    if (!empty($_FILES['image']['name'])) {
-        $target_dir = "../../uploads/";
-        $target_file = $target_dir . basename($_FILES['image']['name']);
-        $imageFileType = strtolower(pathinfo($target_file, PATHINFO_EXTENSION));
-
-        // Проверка типа файла
-        if ($_FILES['image']['size'] > 2 * 1024 * 1024) { // Максимальный размер: 2 МБ
-            $errors['image'] = "Файл слишком большой (максимум 2 МБ).";
-        } elseif (!in_array($imageFileType, ['jpg', 'jpeg', 'png', 'gif'])) {
-            $errors['image'] = "Разрешены только JPG, JPEG, PNG и GIF.";
-        } else {
-            if (!move_uploaded_file($_FILES['image']['tmp_name'], $target_file)) {
-                $errors['image'] = "Ошибка загрузки изображения.";
-            } else {
-                $image = "/uploads/" . basename($_FILES['image']['name']);
-            }
-        }
-    }
-
-    // Добавление товара
-    if (empty($errors)) {
-        $stmt = $pdo->prepare("INSERT INTO products (name, description, price, category_id, image) VALUES (?, ?, ?, ?, ?)");
-        $stmt->execute([$name, $description, $price, $category_id, $image]);
-
-        redirect('/admin/products/products_list.php');
-    }
-}
+// Получаем список категорий
+$stmt = $pdo->query("SELECT id, name FROM categories ORDER BY name");
+$categories = $stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
 
 <!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
+    <title>Добавить товар</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Добавление товара</title>
+
+    <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
 </head>
 <body>
-    <div class="container mt-4">
-        <h1>Добавление товара</h1>
 
-        <form method="POST" enctype="multipart/form-data">
-            <div class="mb-3">
-                <label for="name" class="form-label">Название:</label>
-                <input type="text" name="name" id="name" class="form-control" required>
-                <?php if (!empty($errors['name'])): ?>
-                    <div class="text-danger small"><?= htmlspecialchars($errors['name']) ?></div>
-                <?php endif; ?>
-            </div>
-
-            <div class="mb-3">
-                <label for="description" class="form-label">Описание:</label>
-                <textarea name="description" id="description" class="form-control"></textarea>
-            </div>
-
-            <div class="mb-3">
-                <label for="price" class="form-label">Цена:</label>
-                <input type="number" step="0.01" name="price" id="price" class="form-control" required>
-                <?php if (!empty($errors['price'])): ?>
-                    <div class="text-danger small"><?= htmlspecialchars($errors['price']) ?></div>
-                <?php endif; ?>
-            </div>
-
-            <div class="mb-3">
-                <label for="category_id" class="form-label">Категория:</label>
-                <input type="number" name="category_id" id="category_id" class="form-control" required>
-                <?php if (!empty($errors['category_id'])): ?>
-                    <div class="text-danger small"><?= htmlspecialchars($errors['category_id']) ?></div>
-                <?php endif; ?>
-            </div>
-
-            <div class="mb-3">
-                <label for="image" class="form-label">Изображение:</label>
-                <input type="file" name="image" id="image" class="form-control">
-                <?php if (!empty($errors['image'])): ?>
-                    <div class="text-danger small"><?= htmlspecialchars($errors['image']) ?></div>
-                <?php endif; ?>
-            </div>
-
-            <button type="submit" class="btn btn-primary">Добавить</button>
-            <a href="/admin/products/products_list.php" class="btn btn-secondary">Отмена</a>
-        </form>
+<!-- Navbar -->
+<nav class="navbar navbar-light bg-white shadow-sm mb-4">
+    <div class="container-fluid">
+        <a class="navbar-brand fs-4" href="/admin/products/products_list.php">
+            <i class="bi bi-cart me-2"></i>Добавить товар
+        </a>
+        <a href="/admin/products/products_list.php" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-left"></i> Назад
+        </a>
     </div>
+</nav>
+
+<div class="container">
+    <h2 class="mb-4">Добавить новый товар</h2>
+
+    <?php if (!empty($errors)): ?>
+        <div class="alert alert-danger">
+            <ul class="mb-0">
+                <?php foreach ($errors as $error): ?>
+                    <li><?= htmlspecialchars($error) ?></li>
+                <?php endforeach; ?>
+            </ul>
+        </div>
+    <?php endif; ?>
+
+    <?php if ($success): ?>
+        <div class="alert alert-success"><?= htmlspecialchars($success) ?></div>
+    <?php endif; ?>
+
+    <form method="POST" action="/admin/products/add_product.php" class="needs-validation" novalidate>
+        <!-- Название -->
+        <div class="mb-3">
+            <label for="name" class="form-label">Название товара</label>
+            <input type="text" class="form-control" id="name" name="name" required>
+        </div>
+
+        <!-- Описание -->
+        <div class="mb-3">
+            <label for="description" class="form-label">Описание</label>
+            <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+        </div>
+
+        <!-- Цена -->
+        <div class="mb-3">
+            <label for="price" class="form-label">Цена</label>
+            <input type="number" step="0.01" min="0" class="form-control" id="price" name="price" required>
+        </div>
+
+        <!-- Количество -->
+        <div class="mb-3">
+            <label for="quantity" class="form-label">Количество на складе</label>
+            <input type="number" min="0" class="form-control" id="quantity" name="quantity" required>
+        </div>
+
+        <!-- Категория -->
+        <div class="mb-3">
+            <label for="category_id" class="form-label">Категория</label>
+            <select class="form-select" id="category_id" name="category_id">
+                <option value="">Без категории</option>
+                <?php foreach ($categories as $cat): ?>
+                    <option value="<?= $cat['id'] ?>"><?= htmlspecialchars($cat['name']) ?></option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+
+        <!-- Изображение -->
+        <div class="mb-3">
+            <label for="image_url" class="form-label">Ссылка на изображение (необязательно)</label>
+            <input type="text" class="form-control" id="image_url" name="image_url">
+        </div>
+
+        <!-- Кнопки -->
+        <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary"><i class="bi bi-save"></i> Добавить товар</button>
+            <a href="/admin/products/products_list.php" class="btn btn-secondary"><i class="bi bi-x-circle"></i> Отмена</a>
+        </div>
+    </form>
+</div>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap @5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- Валидация формы -->
+<script>
+    (() => {
+        'use strict';
+        const forms = document.querySelectorAll('.needs-validation');
+        Array.from(forms).forEach(form => {
+            form.addEventListener('submit', event => {
+                if (!form.checkValidity()) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                form.classList.add('was-validated');
+            }, false);
+        });
+    })();
+</script>
 </body>
 </html>

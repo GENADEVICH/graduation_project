@@ -34,11 +34,11 @@ if (empty($cartItems)) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && empty($errors['cart'])) {
     // Получаем данные из формы
     $shipping_address = trim($_POST['address']);
-    $total_amount = 0;
+    $total_price = 0;
 
     // Вычисляем общую стоимость заказа
     foreach ($cartItems as $item) {
-        $total_amount += $item['price'] * $item['quantity'];
+        $total_price += $item['price'] * $item['quantity'];
     }
 
     try {
@@ -46,8 +46,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && empty($errors['cart'])) {
         $pdo->beginTransaction();
 
         // Добавляем заказ в таблицу orders
-        $stmt = $pdo->prepare("INSERT INTO orders (buyer_id, order_date, status, total_amount, shipping_address) VALUES (?, NOW(), 'pending', ?, ?)");
-        $stmt->execute([$user_id, $total_amount, $shipping_address]);
+        $stmt = $pdo->prepare("INSERT INTO orders (buyer_id, order_date, status, total_price, shipping_address) VALUES (?, NOW(), 'pending', ?, ?)");
+        $stmt->execute([$user_id, $total_price, $shipping_address]);
 
         // Получаем ID созданного заказа
         $order_id = $pdo->lastInsertId();

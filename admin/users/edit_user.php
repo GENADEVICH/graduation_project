@@ -1,56 +1,68 @@
 <?php
-// admin/users/edit_user.php
-
 session_start();
-require '../../includes/functions.php';
 require '../../includes/db.php';
 
-// Проверка авторизации
-if (!isset($_SESSION['admin_id'])) {
-    redirect('/admin/login.php');
-}
+$errors = [];
+$success = '';
 
-// Получение ID пользователя из URL
+// Получаем ID пользователя из URL
 $user_id = $_GET['id'] ?? null;
 
-if (!$user_id) {
-    redirect('/admin/users/users_list.php');
+if (!$user_id || !is_numeric($user_id)) {
+    header('Location: users_list.php');
+    exit;
 }
 
-// Получение данных пользователя
-$stmt = $pdo->prepare("SELECT id, username, email, role, is_blocked FROM users WHERE id = ?");
+// Получаем данные пользователя
+$stmt = $pdo->prepare("SELECT id, username, email, role FROM users WHERE id = ?");
 $stmt->execute([$user_id]);
-$user = $stmt->fetch();
+$user = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if (!$user) {
-    redirect('/admin/users/users_list.php');
+    header('Location: users_list.php');
+    exit;
 }
 
-$errors = [];
-
+// Обработка формы
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $username = trim($_POST['username']);
-    $email = trim($_POST['email']);
-    $role = $_POST['role'];
-    $is_blocked = isset($_POST['is_blocked']) ? 1 : 0;
+    $username = trim($_POST['username'] ?? '');
+    $email = trim($_POST['email'] ?? '');
+    $role = trim($_POST['role'] ?? '');
 
     // Валидация
     if (empty($username)) {
-        $errors['username'] = "Имя пользователя обязательно.";
+        $errors[] = 'Имя пользователя не может быть пустым.';
     }
-
     if (empty($email)) {
-        $errors['email'] = "Email обязателен.";
+        $errors[] = 'Email не может быть пустым.';
     } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-        $errors['email'] = "Некорректный формат email.";
+        $errors[] = 'Некорректный формат email.';
     }
 
-    // Обновление данных
-    if (empty($errors)) {
-        $stmt = $pdo->prepare("UPDATE users SET username = ?, email = ?, role = ?, is_blocked = ? WHERE id = ?");
-        $stmt->execute([$username, $email, $role, $is_blocked, $user_id]);
+    if (empty($role) || !in_array($role, ['buyer', 'seller', 'admin'])) {
+        $errors[] = 'Некорректная роль.';
+    }
 
-        redirect('/admin/users/users_list.php');
+    // Проверяем уникальность email
+    $stmt_check_email = $pdo->prepare("SELECT id FROM users WHERE email = ? AND id != ?");
+    $stmt_check_email->execute([$email, $user_id]);
+    if ($stmt_check_email->fetch()) {
+        $errors[] = 'Этот email уже используется другим пользователем.';
+    }
+
+    // Если нет ошибок — обновляем
+    if (empty($errors)) {
+        try {
+            $stmt_update = $pdo->prepare("UPDATE users SET username = ?, email = ?, role = ? WHERE id = ?");
+            $stmt_update->execute([$username, $email, $role, $user_id]);
+            $success = 'Данные пользователя успешно обновлены.';
+            // Обновляем данные после сохранения
+            $user['username'] = $username;
+            $user['email'] = $email;
+            $user['role'] = $role;
+        } catch (PDOException $e) {
+            $errors[] = 'Ошибка при сохранении данных: ' . $e->getMessage();
+        }
     }
 }
 ?>
@@ -59,48 +71,104 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
+    <title>Редактировать пользователя</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Редактирование пользователя</title>
+
+    <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
 </head>
 <body>
-    <div class="container mt-4">
-        <h1>Редактирование пользователя</h1>
 
-        <form method="POST">
-            <div class="mb-3">
-                <label for="username" class="form-label">Имя пользователя:</label>
-                <input type="text" name="username" id="username" class="form-control" value="<?= htmlspecialchars($user['username']) ?>" required>
-                <?php if (!empty($errors['username'])): ?>
-                    <div class="text-danger small"><?= htmlspecialchars($errors['username']) ?></div>
-                <?php endif; ?>
-            </div>
-
-            <div class="mb-3">
-                <label for="email" class="form-label">Email:</label>
-                <input type="email" name="email" id="email" class="form-control" value="<?= htmlspecialchars($user['email']) ?>" required>
-                <?php if (!empty($errors['email'])): ?>
-                    <div class="text-danger small"><?= htmlspecialchars($errors['email']) ?></div>
-                <?php endif; ?>
-            </div>
-
-            <div class="mb-3">
-                <label for="role" class="form-label">Роль:</label>
-                <select name="role" id="role" class="form-select">
-                    <option value="buyer" <?= $user['role'] === 'buyer' ? 'selected' : '' ?>>Пользователь</option>
-                    <option value="seller" <?= $user['role'] === 'seller' ? 'selected' : '' ?>>Продавец</option>
-                    <option value="admin" <?= $user['role'] === 'admin' ? 'selected' : '' ?>>Администратор</option>
-                </select>
-            </div>
-
-            <div class="mb-3 form-check">
-                <input type="checkbox" name="is_blocked" id="is_blocked" class="form-check-input" <?= $user['is_blocked'] ? 'checked' : '' ?>>
-                <label for="is_blocked" class="form-check-label">Заблокировать пользователя</label>
-            </div>
-
-            <button type="submit" class="btn btn-primary">Сохранить</button>
-            <a href="/admin/users/users_list.php" class="btn btn-secondary">Отмена</a>
-        </form>
+<!-- Navbar -->
+<nav class="navbar navbar-light bg-white shadow-sm mb-4">
+    <div class="container-fluid">
+        <a class="navbar-brand fs-4" href="/admin/dashboard.php">
+            <i class="bi bi-person-gear me-2"></i>Редактирование пользователя
+        </a>
+        <a href="/admin/users/users_list.php" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-left"></i> Назад к списку
+        </a>
     </div>
+</nav>
+
+<div class="container">
+    <h2 class="mb-4">Редактирование пользователя #<?= htmlspecialchars($user['id']) ?></h2>
+
+    <?php if (!empty($errors)): ?>
+        <div class="alert alert-danger">
+            <ul class="mb-0">
+                <?php foreach ($errors as $error): ?>
+                    <li><?= htmlspecialchars($error) ?></li>
+                <?php endforeach; ?>
+            </ul>
+        </div>
+    <?php endif; ?>
+
+    <?php if ($success): ?>
+        <div class="alert alert-success">
+            <?= htmlspecialchars($success) ?>
+        </div>
+    <?php endif; ?>
+
+    <form method="POST" class="needs-validation" novalidate>
+        <!-- Имя пользователя -->
+        <div class="mb-3">
+            <label for="username" class="form-label">Имя пользователя</label>
+            <input type="text" class="form-control" id="username" name="username" value="<?= htmlspecialchars($user['username']) ?>" required>
+            <div class="invalid-feedback">Введите имя пользователя.</div>
+        </div>
+
+        <!-- Email -->
+        <div class="mb-3">
+            <label for="email" class="form-label">Email</label>
+            <input type="email" class="form-control" id="email" name="email" value="<?= htmlspecialchars($user['email']) ?>" required>
+            <div class="invalid-feedback">Введите корректный email.</div>
+        </div>
+
+        <!-- Роль -->
+        <div class="mb-3">
+            <label for="role" class="form-label">Роль</label>
+            <select class="form-select" id="role" name="role" required>
+                <option value="">Выберите роль</option>
+                <option value="buyer" <?= $user['role'] === 'buyer' ? 'selected' : '' ?>>Покупатель</option>
+                <option value="seller" <?= $user['role'] === 'seller' ? 'selected' : '' ?>>Продавец</option>
+                <option value="admin" <?= $user['role'] === 'admin' ? 'selected' : '' ?>>Администратор</option>
+            </select>
+            <div class="invalid-feedback">Выберите роль.</div>
+        </div>
+
+        <!-- Кнопки -->
+        <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary"><i class="bi bi-save"></i> Сохранить изменения</button>
+            <a href="/admin/users/users_list.php" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Назад
+            </a>
+        </div>
+    </form>
+</div>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap @5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- Валидация формы -->
+<script>
+    (() => {
+        'use strict';
+        const forms = document.querySelectorAll('.needs-validation');
+        Array.from(forms).forEach(form => {
+            form.addEventListener('submit', event => {
+                if (!form.checkValidity()) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                form.classList.add('was-validated');
+            }, false);
+        });
+    })();
+</script>
+
 </body>
 </html>

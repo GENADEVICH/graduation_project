@@ -1,37 +1,73 @@
 <?php
-// pages/orders.php
+ini_set('display_errors', 1);
+error_reporting(E_ALL);
 
-require_once __DIR__ . '/../includes/db.php'; // Подключаем db.php
-require_once __DIR__ . '/../includes/functions.php'; // Подключаем functions.php
+session_start();
+require '../includes/db.php';
+require '../includes/functions.php';
 
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
-
+// Проверка авторизации
 if (!isLoggedIn()) {
-    header("Location: /pages/login.php");
-    exit;
+    redirect('/pages/login.php');
 }
 
-// Получаем ID текущего пользователя
-$buyer_id = $_SESSION['user']['id'];
+$errors = [];
+$success = '';
 
-// Проверяем, является ли пользователь администратором
-$is_admin = isset($_SESSION['user']['is_admin']) && $_SESSION['user']['is_admin'] === 1;
+// Получение информации о пользователе
+$user_id = $_SESSION['user_id'];
+$stmt = $pdo->prepare("SELECT username, email, profile_picture, role FROM users WHERE id = ?");
+$stmt->execute([$user_id]);
+$user = $stmt->fetch(PDO::FETCH_ASSOC);
 
-// Загрузка заказов
-try {
-    if ($is_admin) {
-        // Администратор видит все заказы
-        $stmt = $pdo->query("SELECT * FROM orders ORDER BY order_date DESC");
-    } else {
-        // Обычный пользователь видит только свои заказы
-        $stmt = $pdo->prepare("SELECT * FROM orders WHERE buyer_id = ? ORDER BY order_date DESC");
-        $stmt->execute([$buyer_id]);
+// Проверка наличия пользователя
+if (!$user) {
+    $errors['general'] = "Пользователь не найден.";
+}
+
+// Получение списка заказов пользователя
+$stmt_orders = $pdo->prepare("SELECT * FROM orders WHERE buyer_id = ? ORDER BY order_date DESC");
+$stmt_orders->execute([$user_id]);
+$orders = $stmt_orders->fetchAll(PDO::FETCH_ASSOC);
+
+// Разделение заказов на актуальные, завершённые и отменённые
+$active_orders = [];
+$completed_orders = [];
+$canceled_orders = [];
+
+// Функция для перевода статусов
+function translateStatus($status) {
+    switch ($status) {
+        case 'pending':
+            return 'Ожидает обработки';
+        case 'shipped':
+            return 'Отправлен';
+        case 'paid':
+            return 'Оплачен';
+        case 'delivered':
+            return 'Доставлен';
+        case 'completed':
+            return 'Завершён';
+        case 'cancelled':
+            return 'Отменён';
+        default:
+            return $status;
     }
-    $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
-} catch (PDOException $e) {
-    die("Ошибка при выполнении запроса: " . $e->getMessage());
+}
+
+foreach ($orders as $order) {
+    // Актуальные заказы (pending и shipped)
+    if ($order['status'] == 'pending' || $order['status'] == 'shipped' || $order['status'] == 'paid') {
+        $active_orders[] = $order;
+    }
+    // Завершённые заказы (delivered и completed)
+    elseif ($order['status'] == 'delivered' || $order['status'] == 'completed') {
+        $completed_orders[] = $order;
+    }
+    // Отменённые заказы
+    elseif ($order['status'] == 'cancelled') {
+        $canceled_orders[] = $order;
+    }
 }
 ?>
 
@@ -40,69 +76,95 @@ try {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Мои заказы</title>
+    <title>Мои Заказы</title>
 
-    <!-- Bootstrap CSS -->
+    <!-- Bootstrap -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-
-    <!-- Bootstrap Icons -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
-
-    <!-- Собственные стили -->
     <link rel="stylesheet" href="/assets/css/styles.css">
 </head>
 <body>
-    <?php include __DIR__ . '/../includes/header.php'; ?>
+<?php include __DIR__ . '/../includes/header.php'; ?>
 
-    <main class="container mt-4">
-    <div style="height: 1220px">
-        <h2><?= $is_admin ? 'Все заказы' : 'Мои заказы' ?></h2>
+<main class="container mt-4">
+    <div class="row justify-content-center">
+        <!-- Левый блок с информацией о пользователе -->
+        <div class="col-md-8 col-lg-6">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h1 class="card-title mb-4">Мои Заказы</h1>
 
-        <?php if (empty($orders)): ?>
-            <div class="alert alert-info">
-                <?= $is_admin ? 'Нет заказов для отображения.' : 'У вас пока нет заказов.' ?>
+                    <!-- Вкладки -->
+                    <ul class="nav nav-tabs" id="orderTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <a class="nav-link active" id="active-tab" data-bs-toggle="tab" href="#active-orders" role="tab" aria-controls="active-orders" aria-selected="true">Актуальные</a>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <a class="nav-link" id="completed-tab" data-bs-toggle="tab" href="#completed-orders" role="tab" aria-controls="completed-orders" aria-selected="false">Завершённые</a>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <a class="nav-link" id="canceled-tab" data-bs-toggle="tab" href="#canceled-orders" role="tab" aria-controls="canceled-orders" aria-selected="false">Отменённые</a>
+                        </li>
+                    </ul>
+                    <div class="tab-content mt-3" id="orderTabsContent">
+                        <!-- Актуальные заказы -->
+                        <div class="tab-pane fade show active" id="active-orders" role="tabpanel" aria-labelledby="active-tab">
+                            <?php if (empty($active_orders)): ?>
+                                <div class="alert alert-info">У вас нет актуальных заказов.</div>
+                            <?php else: ?>
+                                <ul class="list-group">
+                                    <?php foreach ($active_orders as $order): ?>
+                                        <li class="list-group-item">
+                                            <a href="/pages/order_details.php?id=<?= $order['id'] ?>">
+                                                Заказ #<?= htmlspecialchars($order['id']) ?> - <?= translateStatus($order['status']) ?>
+                                            </a>
+                                        </li>
+                                    <?php endforeach; ?>
+                                </ul>
+                            <?php endif; ?>
+                        </div>
+
+                        <!-- Завершённые заказы -->
+                        <div class="tab-pane fade" id="completed-orders" role="tabpanel" aria-labelledby="completed-tab">
+                            <?php if (empty($completed_orders)): ?>
+                                <div class="alert alert-info">У вас нет завершённых заказов.</div>
+                            <?php else: ?>
+                                <ul class="list-group">
+                                    <?php foreach ($completed_orders as $order): ?>
+                                        <li class="list-group-item">
+                                            <a href="/pages/order_details.php?id=<?= $order['id'] ?>">
+                                                Заказ #<?= htmlspecialchars($order['id']) ?> - <?= translateStatus($order['status']) ?>
+                                            </a>
+                                        </li>
+                                    <?php endforeach; ?>
+                                </ul>
+                            <?php endif; ?>
+                        </div>
+
+                        <!-- Отменённые заказы -->
+                        <div class="tab-pane fade" id="canceled-orders" role="tabpanel" aria-labelledby="canceled-tab">
+                            <?php if (empty($canceled_orders)): ?>
+                                <div class="alert alert-info">У вас нет отменённых заказов.</div>
+                            <?php else: ?>
+                                <ul class="list-group">
+                                    <?php foreach ($canceled_orders as $order): ?>
+                                        <li class="list-group-item">
+                                            <a href="/pages/order_details.php?id=<?= $order['id'] ?>">
+                                                Заказ #<?= htmlspecialchars($order['id']) ?> - <?= translateStatus($order['status']) ?>
+                                            </a>
+                                        </li>
+                                    <?php endforeach; ?>
+                                </ul>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                </div>
             </div>
-        <?php else: ?>
-            <table class="table table-striped">
-                <thead>
-                    <tr>
-                        <th>ID заказа</th>
-                        <th>Дата</th>
-                        <th>Статус</th>
-                        <th>Сумма</th>
-                        <th></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php foreach ($orders as $order): ?>
-                        <tr>
-                            <td>#<?= htmlspecialchars($order['id']) ?></td>
-                            <td><?= htmlspecialchars($order['order_date']) ?></td>
-                            <td>
-                                <span class="badge 
-                                    <?= $order['status'] === 'pending' ? 'bg-warning' : '' ?>
-                                    <?= $order['status'] === 'completed' ? 'bg-success' : '' ?>
-                                    <?= $order['status'] === 'cancelled' ? 'bg-danger' : '' ?>">
-                                    <?= htmlspecialchars($order['status']) ?>
-                                </span>
-                            </td>
-                            <td><?= htmlspecialchars($order['total_price']) ?> руб.</td>
-                            <td>
-                                <a href="/pages/order_details.php?id=<?= $order['id'] ?>" class="btn btn-sm btn-primary">
-                                    <i class="bi bi-eye"></i> Подробнее
-                                </a>
-                            </td>
-                        </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
-        <?php endif; ?>
         </div>
-    </main>
+    </div>
+</main>
 
-    <?php include __DIR__ . '/../includes/footer.php'; ?>
-
-    <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

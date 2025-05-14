@@ -1,22 +1,18 @@
 <?php
-// admin/users/delete_user.php
-
 session_start();
-require '../../includes/functions.php';
 require '../../includes/db.php';
 
-// Проверка авторизации
-if (!isset($_SESSION['admin_id'])) {
-    redirect('/admin/login.php');
-}
 
-// Получение ID пользователя из URL
 $user_id = $_GET['id'] ?? null;
 
-if ($user_id) {
-    $stmt = $pdo->prepare("DELETE FROM users WHERE id = ?");
-    $stmt->execute([$user_id]);
+if ($user_id && is_numeric($user_id)) {
+    try {
+        $stmt = $pdo->prepare("DELETE FROM users WHERE id = ?");
+        $stmt->execute([$user_id]);
+    } catch (PDOException $e) {
+        die("Ошибка при удалении пользователя: " . $e->getMessage());
+    }
 }
 
-redirect('/admin/users/users_list.php');
-?>
+header('Location: users_list.php');
+exit;

@@ -29,6 +29,21 @@ if (!$user) {
 $stmt_orders = $pdo->prepare("SELECT * FROM orders WHERE buyer_id = ? ORDER BY order_date DESC");
 $stmt_orders->execute([$user_id]);
 $orders = $stmt_orders->fetchAll(PDO::FETCH_ASSOC);
+
+// Разделение заказов на актуальные и завершённые
+$active_orders = [];
+$completed_orders = [];
+
+foreach ($orders as $order) {
+    // Актуальные заказы (pending и shipped)
+    if ($order['status'] == 'pending' || $order['status'] == 'shipped' || $order['status'] == 'paid') {
+        $active_orders[] = $order;
+    }
+    // Завершённые заказы (completed, cancelled и delivered)
+    elseif ($order['status'] == 'completed' || $order['status'] == 'cancelled' || $order['status'] == 'delivered') {
+        $completed_orders[] = $order;
+    }
+}
 ?>
 
 <!DOCTYPE html>
@@ -66,7 +81,6 @@ $orders = $stmt_orders->fetchAll(PDO::FETCH_ASSOC);
                     <!-- Информация о пользователе -->
                     <p class="mb-2"><strong>Имя пользователя:</strong> <?= htmlspecialchars($user['username']) ?></p>
                     <p class="mb-2"><strong>Email:</strong> <?= htmlspecialchars($user['email']) ?></p>
-                    <p class="mb-4"><strong>Роль:</strong> <?= htmlspecialchars($user['role']) ?></p>
 
                     <!-- Кнопки -->
                     <a href="/pages/logout.php" class="btn btn-danger me-2 mb-2">
@@ -75,12 +89,14 @@ $orders = $stmt_orders->fetchAll(PDO::FETCH_ASSOC);
                     <a href="/pages/edit-profile.php" class="btn btn-primary mb-2">
                         <i class="bi bi-pencil-square"></i> Редактировать профиль
                     </a>
+                    <?php if ($user['role'] === 'admin'): ?>
+                            <a href="/admin/dashboard.php" class="btn btn-outline-success">
+                                <i class="bi bi-shop"></i> admin
+                            </a>
+                    <?php endif; ?>
 
                     <!-- Дополнительные действия -->
                     <div class="d-grid gap-2 col-10 mx-auto mt-3">
-                        <a href="/pages/orders.php" class="btn btn-outline-primary">
-                            <i class="bi bi-bag"></i> Мои покупки
-                        </a>
 
                         <?php if ($user['role'] === 'seller'): ?>
                             <a href="/pages/my_products.php" class="btn btn-outline-success">
@@ -105,19 +121,50 @@ $orders = $stmt_orders->fetchAll(PDO::FETCH_ASSOC);
                 <div class="card-body">
                     <h5 class="card-title">Мои заказы</h5>
 
-                    <?php if (empty($orders)): ?>
-                        <div class="alert alert-info">У вас пока нет заказов.</div>
-                    <?php else: ?>
-                        <ul class="list-group">
-                            <?php foreach ($orders as $order): ?>
-                                <li class="list-group-item">
-                                    <a href="/pages/order_details.php?id=<?= $order['id'] ?>">
-                                        Заказ #<?= htmlspecialchars($order['id']) ?> - <?= htmlspecialchars($order['status']) ?>
-                                    </a>
-                                </li>
-                            <?php endforeach; ?>
-                        </ul>
-                    <?php endif; ?>
+                    <!-- Вкладки -->
+                    <ul class="nav nav-tabs" id="orderTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <a class="nav-link active" id="active-tab" data-bs-toggle="tab" href="#active-orders" role="tab" aria-controls="active-orders" aria-selected="true">Актуальные</a>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <a class="nav-link" id="completed-tab" data-bs-toggle="tab" href="#completed-orders" role="tab" aria-controls="completed-orders" aria-selected="false">Завершённые</a>
+                        </li>
+                    </ul>
+                    <div class="tab-content mt-3" id="orderTabsContent">
+                        <!-- Актуальные заказы -->
+                        <div class="tab-pane fade show active" id="active-orders" role="tabpanel" aria-labelledby="active-tab">
+                            <?php if (empty($active_orders)): ?>
+                                <div class="alert alert-info">У вас нет актуальных заказов.</div>
+                            <?php else: ?>
+                                <ul class="list-group">
+                                    <?php foreach ($active_orders as $order): ?>
+                                        <li class="list-group-item">
+                                            <a href="/pages/order_details.php?id=<?= $order['id'] ?>">
+                                                Заказ #<?= htmlspecialchars($order['id']) ?> - <?= translateOrderStatus($order['status']) ?>
+                                            </a>
+                                        </li>
+                                    <?php endforeach; ?>
+                                </ul>
+                            <?php endif; ?>
+                        </div>
+
+                        <!-- Завершённые заказы -->
+                        <div class="tab-pane fade" id="completed-orders" role="tabpanel" aria-labelledby="completed-tab">
+                            <?php if (empty($completed_orders)): ?>
+                                <div class="alert alert-info">У вас нет завершённых заказов.</div>
+                            <?php else: ?>
+                                <ul class="list-group">
+                                    <?php foreach ($completed_orders as $order): ?>
+                                        <li class="list-group-item">
+                                            <a href="/pages/order_details.php?id=<?= $order['id'] ?>">
+                                                Заказ #<?= htmlspecialchars($order['id']) ?> - <?= translateOrderStatus($order['status']) ?>
+                                            </a>
+                                        </li>
+                                    <?php endforeach; ?>
+                                </ul>
+                            <?php endif; ?>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -128,3 +175,25 @@ $orders = $stmt_orders->fetchAll(PDO::FETCH_ASSOC);
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
+
+<?php
+// Функция для перевода статусов заказов
+function translateOrderStatus($status) {
+    switch ($status) {
+        case 'pending':
+            return 'Ожидает подтверждения';
+        case 'shipped':
+            return 'Отправлен';
+        case 'paid':
+            return 'Оплачен';
+        case 'completed':
+            return 'Завершён';
+        case 'cancelled':
+            return 'Отменён';
+        case 'delivered':
+            return 'Доставлен';
+        default:
+            return 'Неизвестный статус';
+    }
+}
+?>
