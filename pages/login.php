@@ -24,13 +24,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // Авторизация
     if (empty($errors)) {
-        $stmt = $pdo->prepare("SELECT id, username, password FROM users WHERE email = ?");
+        $stmt = $pdo->prepare("SELECT id, username, password, role FROM users WHERE email = ?");
         $stmt->execute([$email]);
         $user = $stmt->fetch();
 
         if ($user && password_verify($password, $user['password'])) {
             $_SESSION['user_id'] = $user['id'];
             $_SESSION['username'] = $user['username'];
+            $_SESSION['role'] = $user['role'] ?? 'buyer';
+
             redirect('/pages/profile.php');
         } else {
             $errors['general'] = "Неверный email или пароль.";
@@ -91,6 +93,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <!-- Кнопка входа -->
                             <button type="submit" class="btn btn-primary w-100">Войти</button>
                         </form>
+                        <p class="mt-3 mb-0">
+                                <a href="/pages/forgot-password.php" class="text-decoration-none">Забыли пароль?</a>
+                            </p>
 
                         <!-- Ссылка на регистрацию -->
                         <p class="mt-3 mb-0">

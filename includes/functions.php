@@ -1,16 +1,6 @@
 <?php
 // includes/functions.php
 
-// Генерация CSRF-токена
-if (!function_exists('generateCsrfToken')) {
-    function generateCsrfToken() {
-        if (empty($_SESSION['csrf_token'])) {
-            $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
-        }
-        return $_SESSION['csrf_token'];
-    }
-}
-
 // Перенаправление на другую страницу
 if (!function_exists('redirect')) {
     function redirect($url) {
@@ -29,17 +19,76 @@ if (!function_exists('isLoggedIn')) {
 // Выход из системы
 if (!function_exists('logout')) {
     function logout() {
-        session_start();
         if (!isLoggedIn()) {
             redirect('/pages/login.php');
         }
+
+        // Очистка сессии
         $_SESSION = [];
+
+        // Уничтожение сессии
         session_destroy();
 
-        // Сообщение об успешном выходе
-        session_start();
-        $_SESSION['message'] = "Вы успешно вышли из системы.";
+        // Удаление сессионной куки
+        if (ini_get("session.use_cookies")) {
+            $params = session_get_cookie_params();
+            setcookie(
+                session_name(),
+                '',
+                time() - 42000,
+                $params["path"],
+                $params["domain"],
+                $params["secure"],
+                $params["httponly"]
+            );
+        }
+
+        // Перенаправление
         redirect('/index.php');
+    }
+}
+
+// Подключение автозагрузчика
+require_once __DIR__ . '/../vendor/autoload.php';
+
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception;
+
+if (!function_exists('send_email')) {
+    function send_email($to, $subject, $message) {
+        require_once __DIR__ . '/../vendor/autoload.php';
+
+        $mail = new PHPMailer(true);
+
+        try {
+            // Настройки сервера
+            $mail->isSMTP();                                      // Использовать SMTP
+            $mail->Host       = 'ssl://smtp.spaceweb.ru';         // Сервер от SpaceWeb
+            $mail->SMTPAuth   = true;                             // Включить аутентификацию
+            $mail->Username   = 'support@akrapov1c.ru';           // Твой email
+            $mail->Password   = 'HSV5DYGZCgVZC@DA';               // Пароль от почты
+            $mail->SMTPSecure = 'ssl';                            // SSL-шифрование
+            $mail->Port       = 465;                              // Порт для SSL
+
+            // Кодировка
+            $mail->CharSet = 'UTF-8';                             // ОБЯЗАТЕЛЬНО!
+
+            // Получатель
+            $mail->setFrom('support@akrapov1c.ru', 'MAXIM STROEV');
+            $mail->addAddress($to);                               // Кому
+
+            // Контент
+            $mail->isHTML(true);                                  // HTML формат
+            $mail->Subject = $subject;
+            $mail->Body    = $message;
+
+            // Отправляем
+            $mail->send();
+            return true;
+        } catch (Exception $e) {
+            error_log("Ошибка отправки email: " . $mail->ErrorInfo);
+            return false;
+        }
     }
 }
 

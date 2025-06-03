@@ -2,6 +2,11 @@
 session_start();
 require '../../includes/db.php';
 
+if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
+    header('Location: /pages/login.php');
+    exit;
+}
+
 $search = $_GET['search'] ?? '';
 
 try {
@@ -43,7 +48,7 @@ try {
         <a class="navbar-brand fs-4" href="/admin/dashboard.php">
             <i class="bi bi-cart me-2"></i>Товары
         </a>
-        <a href="/admin/logout.php" class="btn btn-outline-danger">
+        <a href="/pages/profile.php" class="btn btn-outline-danger">
             <i class="bi bi-box-arrow-right"></i> Выйти
         </a>
     </div>

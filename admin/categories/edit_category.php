@@ -2,6 +2,11 @@
 session_start();
 require '../../includes/db.php';
 
+if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
+    header('Location: /pages/login.php');
+    exit;
+}
+
 $category_id = $_GET['id'] ?? null;
 
 if (!$category_id || !is_numeric($category_id)) {

@@ -2,6 +2,11 @@
 session_start();
 require '../../includes/db.php';
 
+if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
+    header('Location: /pages/login.php');
+    exit;
+}
+
 $errors = [];
 $success = '';
 

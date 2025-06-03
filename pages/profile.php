@@ -16,13 +16,24 @@ $success = '';
 
 // Получение информации о пользователе
 $user_id = $_SESSION['user_id'];
-$stmt = $pdo->prepare("SELECT username, email, profile_picture, role FROM users WHERE id = ?");
+$stmt = $pdo->prepare("SELECT username, email, profile_picture FROM users WHERE id = ?");
 $stmt->execute([$user_id]);
 $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
 // Проверка наличия пользователя
 if (!$user) {
     $errors['general'] = "Пользователь не найден.";
+}
+
+// Получение роли из сессии
+$role = $_SESSION['role'] ?? null;
+
+if (!$role) {
+    $stmtRole = $pdo->prepare("SELECT role FROM users WHERE id = ?");
+    $stmtRole->execute([$user_id]);
+    $user_role = $stmtRole->fetchColumn();
+    $role = $user_role ?: 'buyer'; // роль по умолчанию
+    $_SESSION['role'] = $role;
 }
 
 // Получение списка заказов пользователя
@@ -35,12 +46,12 @@ $active_orders = [];
 $completed_orders = [];
 
 foreach ($orders as $order) {
-    // Актуальные заказы (pending и shipped)
-    if ($order['status'] == 'pending' || $order['status'] == 'shipped' || $order['status'] == 'paid') {
+    // Актуальные заказы (pending, shipped, paid)
+    if (in_array($order['status'], ['pending', 'shipped', 'paid'])) {
         $active_orders[] = $order;
     }
-    // Завершённые заказы (completed, cancelled и delivered)
-    elseif ($order['status'] == 'completed' || $order['status'] == 'cancelled' || $order['status'] == 'delivered') {
+    // Завершённые заказы (completed, cancelled, delivered)
+    elseif (in_array($order['status'], ['completed', 'cancelled', 'delivered'])) {
         $completed_orders[] = $order;
     }
 }
@@ -49,14 +60,14 @@ foreach ($orders as $order) {
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Профиль</title>
 
     <!-- Bootstrap -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
-    <link rel="stylesheet" href="/assets/css/styles.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet" />
+    <link rel="stylesheet" href="/assets/css/styles.css" />
 </head>
 <body>
 <?php include __DIR__ . '/../includes/header.php'; ?>
@@ -72,9 +83,9 @@ foreach ($orders as $order) {
                     <!-- Фото пользователя -->
                     <div class="profile-photo mb-4">
                         <?php if (!empty($user['profile_picture']) && file_exists($_SERVER['DOCUMENT_ROOT'] . $user['profile_picture'])): ?>
-                            <img src="<?= htmlspecialchars($user['profile_picture']) ?>" alt="Фото пользователя" class="rounded-circle img-fluid" style="width: 150px; height: 150px; object-fit: cover;">
+                            <img src="<?= htmlspecialchars($user['profile_picture']) ?>" alt="Фото пользователя" class="rounded-circle img-fluid" style="width: 150px; height: 150px; object-fit: cover;" />
                         <?php else: ?>
-                            <img src="/assets/images/default_profile.png" alt="Заглушка фото пользователя" class="rounded-circle img-fluid" style="width: 150px; height: 150px; object-fit: cover;">
+                            <img src="/assets/images/default_profile.png" alt="Заглушка фото пользователя" class="rounded-circle img-fluid" style="width: 150px; height: 150px; object-fit: cover;" />
                         <?php endif; ?>
                     </div>
 
@@ -89,23 +100,22 @@ foreach ($orders as $order) {
                     <a href="/pages/edit-profile.php" class="btn btn-primary mb-2">
                         <i class="bi bi-pencil-square"></i> Редактировать профиль
                     </a>
-                    <?php if ($user['role'] === 'admin'): ?>
-                            <a href="/admin/dashboard.php" class="btn btn-outline-success">
-                                <i class="bi bi-shop"></i> admin
-                            </a>
+                    <?php if ($role === 'admin'): ?>
+                        <a href="/admin/dashboard.php" class="btn btn-primary mb-2">
+                            <i class="bi bi-database"></i> admin
+                        </a>
                     <?php endif; ?>
 
                     <!-- Дополнительные действия -->
                     <div class="d-grid gap-2 col-10 mx-auto mt-3">
-
-                        <?php if ($user['role'] === 'seller'): ?>
+                        <?php if ($role === 'seller'): ?>
                             <a href="/pages/my_products.php" class="btn btn-outline-success">
                                 <i class="bi bi-shop"></i> Мои товары
                             </a>
                             <a href="/pages/seller_orders.php" class="btn btn-outline-secondary">
                                 <i class="bi bi-receipt"></i> Заказы на мои товары
                             </a>
-                        <?php elseif ($user['role'] === 'buyer'): ?>
+                        <?php elseif ($role === 'buyer'): ?>
                             <a href="/pages/become_seller.php" class="btn btn-warning">
                                 <i class="bi bi-person-plus"></i> Стать продавцом
                             </a>

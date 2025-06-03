@@ -80,85 +80,90 @@ if ($product_id) {
     <link rel="stylesheet" href="/assets/css/styles.css">
 </head>
 <body>
+
 <?php include '../includes/header.php'; ?>
 
-<main class="container mt-4">
-    <div class="row">
-        <div class="col-md-6 mb-4">
-            <div class="d-flex flex-column align-items-center">
-                <div class="image-gallery">
-                    <?php if (!empty($product['main_image'])): ?>
-                        <img src="<?= htmlspecialchars($product['main_image']) ?>" alt="<?= htmlspecialchars($product['name']) ?>" class="img-fluid rounded main-image">
-                    <?php else: ?>
-                        <img src="/assets/images/no-image.jpg" alt="Нет изображения" class="img-fluid rounded main-image">
-                    <?php endif; ?>
-                </div>
-                <div class="mt-3 d-flex justify-content-center">
-                    <?php if (!empty($images)): ?>
-                        <?php foreach ($images as $image): ?>
-                            <div class="thumbnail mx-1">
-                                <img src="<?= htmlspecialchars($image) ?>" alt="Миниатюра" class="img-fluid rounded">
-                            </div>
-                        <?php endforeach; ?>
-                    <?php else: ?>
-                        <?php for ($i = 1; $i <= 5; $i++): ?>
-                            <div class="thumbnail mx-1">
-                                <img src="/assets/images/no-image.jpg" alt="Миниатюра" class="img-fluid rounded">
-                            </div>
-                        <?php endfor; ?>
-                    <?php endif; ?>
-                </div>
+<main class="container mt-4 mb-5">
+    <div class="row g-4">
+        <!-- Галерея изображений -->
+        <div class="col-md-6">
+            <div class="image-gallery mb-3 border rounded overflow-hidden shadow-sm position-relative" style="height: 450px;">
+                <img src="<?= htmlspecialchars($product['main_image'] ?? '/assets/images/no-image.jpg') ?>" 
+                    alt="<?= htmlspecialchars($product['name']) ?>" 
+                    class="w-100 h-100 object-fit-contain bg-light" id="mainImage">
             </div>
-        </div>
+            
+            <div class="d-flex justify-content-center gap-2 flex-wrap mt-2">
+                <?php if (!empty($images)): ?>
+                    <?php foreach ($images as $image): ?>
+                        <img src="<?= htmlspecialchars($image) ?>" 
+                            alt="Миниатюра" 
+                            class="img-thumbnail thumb" 
+                            style="cursor:pointer; width: 80px; height: 80px; object-fit: contain;"
+                            onclick="changeMainImage(this.src)">
+                    <?php endforeach; ?>
+                <?php else: ?>
+                    <?php for ($i = 0; $i < 5; $i++): ?>
+                        <img src="/assets/images/no-image.jpg" 
+                            alt="Миниатюра" 
+                            class="img-thumbnail thumb" 
+                            style="cursor:pointer; width: 80px; height: 80px; object-fit: contain;">
+                    <?php endfor; ?>
+                <?php endif; ?>
+            </div>
+</div>
 
+        <!-- Описание товара -->
         <div class="col-md-6">
             <h1 class="mb-3"><?= htmlspecialchars($product['name']) ?></h1>
 
             <?php if (!empty($product['discount'])): ?>
-                <span class="badge bg-danger text-white">-<?= htmlspecialchars($product['discount']) ?>%</span>
+                <span class="badge bg-danger text-white mb-2">-<?= htmlspecialchars($product['discount']) ?>%</span>
             <?php endif; ?>
 
-            <div class="mb-2">
-                <span class="text-warning">
+            <div class="mb-3">
+                <span class="text-warning fs-5">
                     <?php for ($i = 1; $i <= 5; $i++): ?>
                         <i class="bi bi-star-fill <?= $i <= $avg_rating ? 'text-warning' : 'text-muted' ?>"></i>
                     <?php endfor; ?>
-                    <?= htmlspecialchars($avg_rating) ?> •
                 </span>
-                <span class="text-muted"><?= htmlspecialchars($total_reviews) ?> отзывов</span>
-            </div>
-
-            <div class="mb-2">
-                <span class="badge bg-primary text-white"><?= htmlspecialchars($brand_name) ?></span>
-                <span class="text-success"><i class="bi bi-check-circle-fill"></i> Оригинальный товар</span>
+                <span class="ms-2"><?= htmlspecialchars($avg_rating) ?> (<?= htmlspecialchars($total_reviews) ?>)</span>
             </div>
 
             <div class="mb-3">
-                <span class="fw-bold">Состояние товара:</span>
-                <span class="badge bg-primary text-white">Новые</span>
-                <span class="badge bg-secondary text-white">Уцененные</span>
+                <span class="badge bg-primary"><?= htmlspecialchars($brand_name) ?></span>
+                <span class="text-success ms-2"><i class="bi bi-check-circle-fill"></i> Оригинальный товар</span>
             </div>
 
             <div class="mb-3">
-                <h2 class="text-primary fw-bold"><?= htmlspecialchars($product['price']) ?> руб.</h2>
+                <h2 class="text-primary fw-bold"><?= htmlspecialchars($product['price']) ?> ₽</h2>
                 <?php if (!empty($product['old_price'])): ?>
-                    <del class="text-muted fs-5"><?= htmlspecialchars($product['old_price']) ?> руб.</del>
+                    <del class="text-muted"><?= htmlspecialchars($product['old_price']) ?> ₽</del>
                 <?php endif; ?>
             </div>
 
-            <a href="/pages/cart.php?action=add&id=<?= $product['id'] ?>" class="btn btn-primary btn-lg w-100 mb-2">
-                <i class="bi bi-cart-plus"></i> Добавить в корзину
-            </a>
+            <div class="d-flex gap-3 mb-4">
+                <a href="/pages/cart.php?action=add&id=<?= $product['id'] ?>" class="btn btn-primary btn-lg flex-grow-1">
+                    <i class="bi bi-cart-plus me-2"></i> В корзину
+                </a>
+                <button class="btn btn-outline-danger btn-lg px-3">
+                    <i class="bi bi-heart"></i>
+                </button>
+                <button class="btn btn-outline-secondary btn-lg px-3">
+                    <i class="bi bi-share"></i>
+                </button>
+            </div>
 
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h5>О товаре</h5>
+            <!-- Характеристики -->
+            <div class="card mb-4 shadow-sm">
+                <div class="card-header bg-white py-3">
+                    <h5 class="mb-0">Характеристики</h5>
                 </div>
                 <div class="card-body">
                     <?php if (!empty($attributes)): ?>
-                        <dl class="row">
+                        <dl class="row g-2">
                             <?php foreach ($attributes as $name => $value): ?>
-                                <dt class="col-sm-4"><?= htmlspecialchars($name) ?></dt>
+                                <dt class="col-sm-4 fw-semibold"><?= htmlspecialchars($name) ?></dt>
                                 <dd class="col-sm-8"><?= htmlspecialchars($value) ?></dd>
                             <?php endforeach; ?>
                         </dl>
@@ -168,21 +173,24 @@ if ($product_id) {
                 </div>
             </div>
 
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h5>Отзывы покупателей</h5>
+            <!-- Отзывы -->
+            <div class="card mb-4 shadow-sm">
+                <div class="card-header bg-white py-3">
+                    <h5 class="mb-0">Отзывы покупателей</h5>
                 </div>
                 <div class="card-body">
                     <?php if (!empty($reviews)): ?>
                         <?php foreach ($reviews as $review): ?>
-                            <div class="mb-3">
-                                <p><strong><?= htmlspecialchars($review['username']) ?></strong></p>
-                                <p>
-                                    <?php for ($i = 1; $i <= $review['rating']; $i++): ?>
-                                        <i class="bi bi-star-fill text-warning"></i>
-                                    <?php endfor; ?>
-                                </p>
-                                <p><?= htmlspecialchars($review['review']) ?></p>
+                            <div class="card mb-3 border-0 bg-light">
+                                <div class="card-body p-3">
+                                    <h6 class="mb-1"><?= htmlspecialchars($review['username']) ?></h6>
+                                    <p class="text-warning mb-1">
+                                        <?php for ($i = 1; $i <= 5; $i++): ?>
+                                            <i class="bi bi-star-fill <?= $i <= $review['rating'] ? 'text-warning' : 'text-muted' ?>"></i>
+                                        <?php endfor; ?>
+                                    </p>
+                                    <p class="mb-0"><?= htmlspecialchars($review['review']) ?></p>
+                                </div>
                             </div>
                         <?php endforeach; ?>
                     <?php else: ?>
@@ -195,6 +203,12 @@ if ($product_id) {
 </main>
 
 <?php include '../includes/footer.php'; ?>
+
+<script>
+    function changeMainImage(src) {
+        document.getElementById('mainImage').src = src;
+    }
+</script>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>

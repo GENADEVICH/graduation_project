@@ -2,6 +2,11 @@
 session_start();
 require '../../includes/db.php';
 
+if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
+    header('Location: /pages/login.php');
+    exit;
+}
+
 $product_id = $_GET['id'] ?? null;
 
 if (!$product_id || !is_numeric($product_id)) {

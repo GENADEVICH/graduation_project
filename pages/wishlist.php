@@ -58,55 +58,62 @@ $wishlistItems = $stmt->fetchAll(PDO::FETCH_ASSOC);
     <!-- Твои собственные стили -->
     <link rel="stylesheet" href="/assets/css/styles.css">
 </head>
-<body>
+<body class="bg-light">
     <?php include '../includes/header.php'; ?>
 
-    <main class="container mt-4">
-        <div style="height: 1220px">
-            <h1 class="text-center mb-4">Список желаний</h1>
+    <main class="container py-5">
+        <h1 class="text-center mb-5">Ваш список желаний</h1>
 
-            <?php if (empty($wishlistItems)): ?>
-                <div class="alert alert-info text-center">
-                    Ваш список желаний пуст.
-                </div>
-            <?php else: ?>
-                <div class="row row-cols-1 row-cols-md-3 g-4">
-                    <?php foreach ($wishlistItems as $item): ?>
-                        <div class="col">
-                            <div class="card h-100">
-                                <?php if (!empty($item['main_image'])): ?>
-                                    <img src="<?= htmlspecialchars($item['main_image']) ?>" alt="<?= htmlspecialchars($item['name']) ?>" class="card-img-top rounded" style="height: 200px; object-fit: cover;">
-                                <?php else: ?>
-                                    <img src="/assets/images/no-image.jpg" alt="Нет изображения" class="card-img-top rounded" style="height: 200px; object-fit: cover;">
-                                <?php endif; ?>
-                                <div class="card-body d-flex flex-column">
-                                    <h5 class="card-title"><?= htmlspecialchars($item['name']) ?></h5>
-                                    <p class="card-text flex-grow-1"><?= htmlspecialchars($item['description'] ?? 'Описание отсутствует.') ?></p>
-                                    <p class="card-text"><strong>Цена:</strong> <?= htmlspecialchars($item['price']) ?> руб.</p>
-                                    <div class="d-flex gap-2 mt-auto">
-                                        <a href="/pages/cart.php?action=add&id=<?= $item['id'] ?>" class="btn btn-primary flex-grow-1">
-                                            <i class="bi bi-cart-plus"></i> В корзину
-                                        </a>
-                                        <a href="/pages/wishlist.php?action=remove&id=<?= $item['id'] ?>" class="btn btn-danger flex-grow-1">
-                                            <i class="bi bi-trash"></i> Удалить
-                                        </a>
-                                    </div>
+        <?php if (empty($wishlistItems)): ?>
+            <div class="alert alert-info text-center shadow-sm py-4">
+                <i class="bi bi-heart-dash display-4"></i>
+                <p class="mt-3 mb-0">Ваш список желаний пуст.</p>
+                <a href="/index.php" class="btn btn-primary mt-3"><i class="bi bi-arrow-left-circle"></i> Вернуться к покупкам</a>
+            </div>
+        <?php else: ?>
+            <div class="row g-4 justify-content-center">
+                <?php foreach ($wishlistItems as $item): ?>
+                    <div class="col-md-4 col-lg-3">
+                        <div class="card h-100 shadow-sm border-0 rounded-4 overflow-hidden">
+                            <img src="<?= htmlspecialchars($item['main_image'] ?? '/assets/images/no-image.jpg') ?>" 
+                                 alt="<?= htmlspecialchars($item['name']) ?>" 
+                                 class="card-img-top" 
+                                 style="height: 220px; object-fit: contain; background-color: #f8f9fa;">
+                            <div class="card-body d-flex flex-column p-3">
+                                <h5 class="card-title fs-6 fw-bold"><?= htmlspecialchars($item['name']) ?></h5>
+                                <p class="card-text text-muted small flex-grow-1">
+                                    <?= htmlspecialchars($item['description'] ?? 'Описание отсутствует.') ?>
+                                </p>
+                                <p class="card-text text-primary fw-semibold">
+                                    <?= htmlspecialchars($item['price']) ?> ₽
+                                </p>
+                                <div class="d-flex gap-2 mt-auto">
+                                    <a href="/pages/cart.php?action=add&id=<?= $item['id'] ?>" 
+                                       class="btn btn-outline-primary btn-sm flex-fill">
+                                        <i class="bi bi-cart-plus me-1"></i> В корзину
+                                    </a>
+                                    <a href="/pages/wishlist.php?action=remove&id=<?= $item['id'] ?>" 
+                                       class="btn btn-outline-danger btn-sm flex-fill">
+                                        <i class="bi bi-trash me-1"></i> Удалить
+                                    </a>
                                 </div>
                             </div>
                         </div>
-                    <?php endforeach; ?>
-                </div>
+                    </div>
+                <?php endforeach; ?>
+            </div>
 
-                <div class="text-end mt-4">
-                    <a href="/pages/wishlist.php?action=clear" class="btn btn-warning">
-                        <i class="bi bi-trash"></i> Очистить список желаний
-                    </a>
-                </div>
-            <?php endif; ?>
-        </div>
+            <div class="text-end mt-4">
+                <a href="/pages/wishlist.php?action=clear" class="btn btn-outline-warning btn-sm">
+                    <i class="bi bi-trash me-1"></i> Очистить список желаний
+                </a>
+            </div>
+        <?php endif; ?>
     </main>
 
-    <!-- Bootstrap JS и зависимости -->
+    <?php include '../includes/footer.php'; ?>
+
+    <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

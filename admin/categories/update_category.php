@@ -2,6 +2,11 @@
 session_start();
 require '../../includes/db.php';
 
+if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
+    header('Location: /pages/login.php');
+    exit;
+}
+
 $id = $_POST['id'] ?? null;
 $name = trim($_POST['name'] ?? '');
 $parent_id = !empty($_POST['parent_id']) ? intval($_POST['parent_id']) : null;
