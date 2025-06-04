@@ -5,6 +5,15 @@ require '../includes/functions.php';
 
 $product_id = $_GET['id'] ?? null;
 
+$user_id = $_SESSION['user_id'] ?? null;
+$wishlistItems = [];
+
+if ($user_id) {
+    $stmt = $pdo->prepare("SELECT product_id FROM wishlist WHERE user_id = ?");
+    $stmt->execute([$user_id]);
+    $wishlistItems = $stmt->fetchAll(PDO::FETCH_COLUMN, 0);
+}
+
 if ($product_id) {
     // Получаем основную информацию о товаре
     $stmt = $pdo->prepare("SELECT * FROM products WHERE id = ?");
@@ -143,11 +152,14 @@ if ($product_id) {
             </div>
 
             <div class="d-flex gap-3 mb-4">
-                <a href="/pages/cart.php?action=add&id=<?= $product['id'] ?>" class="btn btn-primary btn-lg flex-grow-1">
+                <button class="btn btn-primary btn-lg flex-grow-1 add-to-cart" data-product-id="<?= $product['id'] ?>">
                     <i class="bi bi-cart-plus me-2"></i> В корзину
-                </a>
-                <button class="btn btn-outline-danger btn-lg px-3">
-                    <i class="bi bi-heart"></i>
+                </button>
+                <?php
+                    $isInWishlist = in_array($product['id'], $wishlistItems);
+                ?>
+                <button class="btn btn-lg px-3 add-to-wishlist <?= $isInWishlist ? 'btn-danger' : 'btn-outline-danger' ?>" data-product-id="<?= $product['id'] ?>">
+                    <i class="bi <?= $isInWishlist ? 'bi-heart-fill text-white' : 'bi-heart' ?>"></i>
                 </button>
                 <button class="btn btn-outline-secondary btn-lg px-3">
                     <i class="bi bi-share"></i>
@@ -202,12 +214,104 @@ if ($product_id) {
     </div>
 </main>
 
-<?php include '../includes/footer.php'; ?>
+<script>
+document.querySelectorAll('.add-to-cart').forEach(button => {
+    button.addEventListener('click', function () {
+        const productId = this.dataset.productId;
+        const originalText = this.innerHTML;
 
+        // Отправляем AJAX-запрос
+        fetch('../api/add_to_cart_ajax.php?id=' + productId)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    this.innerHTML = '<i class="bi bi-check-circle me-2"></i>Добавлено';
+                    this.disabled = true;
+
+                    // Через 3 секунды возвращаем исходный вид
+                    setTimeout(() => {
+                        this.innerHTML = originalText;
+                        this.disabled = false;
+                    }, 3000);
+
+                    // Опционально: обновить количество в корзине в интерфейсе
+                    updateCartCount(1);
+                } else {
+                    alert(data.message || 'Ошибка при добавлении товара');
+                }
+            })
+            .catch(error => {
+                console.error('Ошибка:', error);
+                alert('Произошла ошибка при добавлении товара в корзину.');
+            });
+    });
+});
+</script>
+
+<script>
+document.querySelectorAll('.add-to-wishlist').forEach(button => {
+    button.addEventListener('click', function (e) {
+        e.preventDefault();
+        const productId = this.dataset.productId;
+        const icon = this.querySelector('i');
+        const isAdding = icon.classList.contains('bi-heart'); // если пустое сердце — значит добавляем
+
+        fetch('/api/add_to_wishlist_ajax.php?id=' + productId, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ remove: !isAdding })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                if (isAdding) {
+                    icon.classList.remove('bi-heart');
+                    icon.classList.add('bi-heart-fill', 'text-white');
+                    this.classList.remove('btn-outline-danger');
+                    this.classList.add('btn-danger');
+                    updateWishlistCount(1);
+                } else {
+                    icon.classList.remove('bi-heart-fill', 'text-white');
+                    icon.classList.add('bi-heart');
+                    this.classList.remove('btn-danger');
+                    this.classList.add('btn-outline-danger');
+                    updateWishlistCount(-1);
+                }
+            } else {
+                alert(data.message || 'Ошибка при изменении избранного');
+            }
+        })
+        .catch(error => {
+            console.error('Ошибка:', error);
+            alert('Произошла ошибка при изменении избранного.');
+        });
+    });
+});
+
+
+
+
+
+function updateWishlistCount(delta) {
+    const badge = document.querySelector('a[href="/pages/wishlist.php"] .badge');
+    if (badge) {
+        let current = parseInt(badge.textContent) || 0;
+        badge.textContent = current + delta;
+    }
+}
+</script>
 <script>
     function changeMainImage(src) {
         document.getElementById('mainImage').src = src;
     }
+
+    function updateCartCount(delta) {
+    const cartBadge = document.querySelector('a[href="/pages/cart.php"] .badge');
+    if (cartBadge) {
+        let current = parseInt(cartBadge.textContent) || 0;
+        cartBadge.textContent = current + delta;
+    }
+}
 </script>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>

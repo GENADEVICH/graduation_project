@@ -68,7 +68,7 @@ $wishlistItems = $stmt->fetchAll(PDO::FETCH_ASSOC);
             <div class="alert alert-info text-center shadow-sm py-4">
                 <i class="bi bi-heart-dash display-4"></i>
                 <p class="mt-3 mb-0">Ваш список желаний пуст.</p>
-                <a href="/index.php" class="btn btn-primary mt-3"><i class="bi bi-arrow-left-circle"></i> Вернуться к покупкам</a>
+                <a href="/pages/home.php" class="btn btn-primary mt-3"><i class="bi bi-arrow-left-circle"></i> Вернуться к покупкам</a>
             </div>
         <?php else: ?>
             <div class="row g-4 justify-content-center">
@@ -113,7 +113,6 @@ $wishlistItems = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     <?php include '../includes/footer.php'; ?>
 
-    <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

@@ -1,23 +1,17 @@
 <?php
-ini_set('display_errors', 1);
-error_reporting(E_ALL);
-
 session_start();
-require '../includes/db.php'; // Подключение к базе данных
-require '../includes/functions.php'; // Подключение функций
+require '../includes/db.php';
+require '../includes/functions.php';
 
-// Проверка, авторизован ли пользователь
 if (!isLoggedIn()) {
-    redirect('/pages/login.php'); // Перенаправляем неавторизованных пользователей
+    redirect('/pages/login.php');
 }
-
-$errors = []; // Массив для хранения ошибок
 
 $user_id = $_SESSION['user_id'];
 
-// Получаем товары из корзины из базы данных
+// Получаем содержимое корзины
 $stmt = $pdo->prepare("
-    SELECT p.id AS product_id, p.name, p.price, c.quantity
+    SELECT p.id, p.name, p.price, c.quantity
     FROM cart c
     JOIN products p ON c.product_id = p.id
     WHERE c.user_id = ?
@@ -25,103 +19,129 @@ $stmt = $pdo->prepare("
 $stmt->execute([$user_id]);
 $cartItems = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-// Проверяем, есть ли товары в корзине
 if (empty($cartItems)) {
-    $errors['cart'] = "Ваша корзина пуста.";
+    // Если корзина пустая — редирект обратно
+    redirect('/pages/cart.php');
 }
 
-// Обработка отправки формы
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && empty($errors['cart'])) {
-    // Получаем данные из формы
-    $shipping_address = trim($_POST['address']);
-    $total_price = 0;
+// Подсчет общей суммы
+$total = 0;
+foreach ($cartItems as $item) {
+    $total += $item['price'] * $item['quantity'];
+}
 
-    // Вычисляем общую стоимость заказа
-    foreach ($cartItems as $item) {
-        $total_price += $item['price'] * $item['quantity'];
-    }
+$errors = [];
+$success = false;
 
-    try {
-        // Начинаем транзакцию
-        $pdo->beginTransaction();
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Валидация полей
+    $name = trim($_POST['name'] ?? '');
+    $phone = trim($_POST['phone'] ?? '');
+    $address = trim($_POST['address'] ?? '');
+    $payment_method = $_POST['payment_method'] ?? '';
 
-        // Добавляем заказ в таблицу orders
-        $stmt = $pdo->prepare("INSERT INTO orders (buyer_id, order_date, status, total_price, shipping_address) VALUES (?, NOW(), 'pending', ?, ?)");
-        $stmt->execute([$user_id, $total_price, $shipping_address]);
+    if ($name === '') $errors[] = 'Введите имя';
+    if ($phone === '') $errors[] = 'Введите телефон';
+    if ($address === '') $errors[] = 'Введите адрес доставки';
+    if (!in_array($payment_method, ['card', 'cash'])) $errors[] = 'Выберите способ оплаты';
 
-        // Получаем ID созданного заказа
-        $order_id = $pdo->lastInsertId();
+    if (empty($errors)) {
+        try {
+            $pdo->beginTransaction();
 
-        // Добавляем товары из корзины в таблицу order_items
-        foreach ($cartItems as $item) {
+            // Вставляем заказ в таблицу orders
+            $stmt = $pdo->prepare("INSERT INTO orders (user_id, name, phone, address, payment_method, total_amount, created_at) VALUES (?, ?, ?, ?, ?, ?, NOW())");
+            $stmt->execute([$user_id, $name, $phone, $address, $payment_method, $total]);
+
+            $order_id = $pdo->lastInsertId();
+
+            // Вставляем товары заказа в таблицу order_items
             $stmt = $pdo->prepare("INSERT INTO order_items (order_id, product_id, quantity, price) VALUES (?, ?, ?, ?)");
-            $stmt->execute([$order_id, $item['product_id'], $item['quantity'], $item['price']]);
+            foreach ($cartItems as $item) {
+                $stmt->execute([$order_id, $item['id'], $item['quantity'], $item['price']]);
+            }
+
+            // Очищаем корзину пользователя
+            $stmt = $pdo->prepare("DELETE FROM cart WHERE user_id = ?");
+            $stmt->execute([$user_id]);
+
+            $pdo->commit();
+
+            $success = true;
+        } catch (Exception $e) {
+            $pdo->rollBack();
+            $errors[] = 'Ошибка при оформлении заказа: ' . $e->getMessage();
         }
-
-        // Очищаем корзину
-        $stmt = $pdo->prepare("DELETE FROM cart WHERE user_id = ?");
-        $stmt->execute([$user_id]);
-
-        // Фиксируем транзакцию
-        $pdo->commit();
-
-        // Перенаправляем на страницу благодарности
-        redirect("/pages/thank_you.php?order_id=$order_id");
-    } catch (PDOException $e) {
-        // Откатываем транзакцию в случае ошибки
-        $pdo->rollBack();
-        $errors['general'] = "Произошла ошибка при оформлении заказа: " . $e->getMessage();
     }
 }
+
 ?>
 
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Оформление заказа</title>
-
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-
-    <!-- Bootstrap Icons (опционально) -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
-
-    <!-- Твои собственные стили -->
-    <link rel="stylesheet" href="/assets/css/styles.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
 </head>
 <body>
-    <?php include __DIR__ . '/../includes/header.php'; ?>
+<?php include '../includes/header.php'; ?>
 
-    <main class="container mt-4">
-        <h1 class="text-center mb-4">Оформление заказа</h1>
+<main class="container mt-4" style="max-width: 600px;">
+    <h1 class="mb-4">Оформление заказа</h1>
 
-        <?php if (!empty($errors['cart'])): ?>
-            <div class="alert alert-danger text-center"><?= htmlspecialchars($errors['cart']) ?></div>
-            <a href="/pages/cart.php" class="btn btn-primary d-block mx-auto">Перейти в корзину</a>
-        <?php elseif (!empty($errors['general'])): ?>
-            <div class="alert alert-danger text-center"><?= htmlspecialchars($errors['general']) ?></div>
-        <?php else: ?>
-            <form method="POST" action="/pages/checkout.php" class="row g-3">
-                <!-- Адрес доставки -->
-                <div class="col-md-12">
-                    <label for="address" class="form-label">Адрес доставки</label>
-                    <input type="text" id="address" name="address" class="form-control" value="<?= htmlspecialchars($_POST['address'] ?? '') ?>" placeholder="ул. Ленина, д. 10">
-                    <?php if (!empty($errors['address'])): ?>
-                        <div class="text-danger"><?= htmlspecialchars($errors['address']) ?></div>
-                    <?php endif; ?>
-                </div>
+    <?php if ($success): ?>
+        <div class="alert alert-success">
+            Спасибо! Ваш заказ успешно оформлен.
+        </div>
+        <a href="/pages/products.php" class="btn btn-primary">Вернуться к покупкам</a>
+    <?php else: ?>
 
-                <!-- Кнопка подтверждения заказа -->
-                <div class="col-12">
-                    <button type="submit" class="btn btn-success w-100">Подтвердить заказ</button>
-                </div>
-            </form>
+        <?php if ($errors): ?>
+            <div class="alert alert-danger">
+                <ul>
+                    <?php foreach ($errors as $error): ?>
+                        <li><?=htmlspecialchars($error)?></li>
+                    <?php endforeach; ?>
+                </ul>
+            </div>
         <?php endif; ?>
-    </main>
 
-    <!-- Bootstrap JS и зависимости -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+        <h5>Ваш заказ на сумму: <strong><?=number_format($total, 2, ',', ' ')?> ₽</strong></h5>
+
+        <form method="post" novalidate>
+            <div class="mb-3">
+                <label for="name" class="form-label">Имя и Фамилия</label>
+                <input type="text" class="form-control" id="name" name="name" required value="<?=htmlspecialchars($_POST['name'] ?? '')?>">
+            </div>
+
+            <div class="mb-3">
+                <label for="phone" class="form-label">Телефон</label>
+                <input type="tel" class="form-control" id="phone" name="phone" required value="<?=htmlspecialchars($_POST['phone'] ?? '')?>">
+            </div>
+
+            <div class="mb-3">
+                <label for="address" class="form-label">Адрес доставки</label>
+                <textarea class="form-control" id="address" name="address" rows="3" required><?=htmlspecialchars($_POST['address'] ?? '')?></textarea>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Способ оплаты</label>
+                <select class="form-select" name="payment_method" required>
+                    <option value="" disabled <?=!isset($_POST['payment_method']) ? 'selected' : ''?>>Выберите способ оплаты</option>
+                    <option value="card" <?=($_POST['payment_method'] ?? '') === 'card' ? 'selected' : ''?>>Банковская карта</option>
+                    <option value="cash" <?=($_POST['payment_method'] ?? '') === 'cash' ? 'selected' : ''?>>Наличные курьеру</option>
+                </select>
+            </div>
+
+            <button type="submit" class="btn btn-success w-100">Подтвердить заказ</button>
+            <a href="/pages/cart.php" class="btn btn-secondary w-100 mt-2">Вернуться в корзину</a>
+        </form>
+
+    <?php endif; ?>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
