@@ -105,7 +105,7 @@ try {
 
     <!-- Welcome -->
     <div class="mb-4">
-        <h1>Добро пожаловать, <?= htmlspecialchars($_SESSION['user']['username']) ?>!</h1>
+        <h1>Добро пожаловать, <?= htmlspecialchars($_SESSION['username'] ?? 'Гость') ?>!</h1>
         <p class="text-muted">Вы вошли как администратор.</p>
     </div>
 

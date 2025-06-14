@@ -33,9 +33,20 @@ try {
     }
 
     // Получаем товары в заказе
-    $stmt = $pdo->prepare("SELECT oi.*, p.name, p.main_image FROM order_items oi JOIN products p ON oi.product_id = p.id WHERE oi.order_id = ?");
+    $stmt = $pdo->prepare("SELECT oi.*, p.name, p.main_image FROM order_items oi 
+                           JOIN products p ON oi.product_id = p.id 
+                           WHERE oi.order_id = ?");
     $stmt->execute([$order_id]);
     $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    // Получаем существующие отзывы пользователя для этих товаров
+    $productIds = array_column($items, 'product_id');
+    $placeholders = implode(',', array_fill(0, count($productIds), '?'));
+    $stmt = $pdo->prepare("SELECT product_id FROM reviews 
+                           WHERE user_id = ? AND product_id IN ($placeholders)");
+    $stmt->execute(array_merge([$_SESSION['user']['id']], $productIds));
+    $reviewed = $stmt->fetchAll(PDO::FETCH_COLUMN, 0);
+
 } catch (PDOException $e) {
     die("Ошибка при выполнении запроса: " . $e->getMessage());
 }
@@ -43,18 +54,12 @@ try {
 // Функция для перевода статуса
 function getOrderStatus($status) {
     switch ($status) {
-        case 'pending':
-            return ['title' => 'Ожидает оплаты', 'class' => 'bg-warning'];
-        case 'paid':
-            return ['title' => 'Оплачен', 'class' => 'bg-info'];
-        case 'shipped':
-            return ['title' => 'Отправлен', 'class' => 'bg-primary'];
-        case 'delivered':
-            return ['title' => 'Доставлен', 'class' => 'bg-success'];
-        case 'cancelled':
-            return ['title' => 'Отменён', 'class' => 'bg-danger'];
-        default:
-            return ['title' => 'Неизвестно', 'class' => 'bg-secondary'];
+        case 'pending': return ['title' => 'Ожидает оплаты', 'class' => 'bg-warning'];
+        case 'paid': return ['title' => 'Оплачен', 'class' => 'bg-info'];
+        case 'shipped': return ['title' => 'Отправлен', 'class' => 'bg-primary'];
+        case 'delivered': return ['title' => 'Доставлен', 'class' => 'bg-success'];
+        case 'cancelled': return ['title' => 'Отменён', 'class' => 'bg-danger'];
+        default: return ['title' => 'Неизвестно', 'class' => 'bg-secondary'];
     }
 }
 
@@ -67,74 +72,81 @@ $statusInfo = getOrderStatus($order['status']);
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Детали заказа #<?= htmlspecialchars($order['id']) ?></title>
-
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap @5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-
-    <!-- Bootstrap Icons -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons @1.10.5/font/bootstrap-icons.css" rel="stylesheet">
-
-    <!-- Собственные стили -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
     <link rel="stylesheet" href="/assets/css/styles.css">
 </head>
 <body>
-    <?php include __DIR__ . '/../includes/header.php'; ?>
+<?php include __DIR__ . '/../includes/header.php'; ?>
 
-    <main class="container mt-4">
-        <h2 class="mb-4">Детали заказа #<?= htmlspecialchars($order['id']) ?></h2>
+<main class="container mt-4">
+    <h2 class="mb-4">Детали заказа #<?= htmlspecialchars($order['order_number']) ?></h2>
 
-        <div class="card mb-4 shadow-sm">
-            <div class="card-body">
-                <p><strong>Дата:</strong> <?= htmlspecialchars($order['order_date']) ?></p>
-                <p><strong>Статус:</strong>
-                    <span class="badge <?= $statusInfo['class'] ?>">
-                        <?= htmlspecialchars($statusInfo['title']) ?>
-                    </span>
-                </p>
-                <p><strong>Общая сумма:</strong> <?= htmlspecialchars($order['total_price']) ?> ₽</p>
-            </div>
+    <div class="card mb-4 shadow-sm">
+        <div class="card-body">
+            <p><strong>Дата:</strong> <?= htmlspecialchars($order['order_date']) ?></p>
+            <p><strong>Статус:</strong>
+                <span class="badge <?= $statusInfo['class'] ?>">
+                    <?= htmlspecialchars($statusInfo['title']) ?>
+                </span>
+            </p>
+            <p><strong>Общая сумма:</strong> <?= htmlspecialchars($order['total_price']) ?> ₽</p>
         </div>
+    </div>
 
-        <h4 class="mb-3">Товары в заказе</h4>
-        <table class="table table-hover align-middle">
-            <thead class="table-light">
-                <tr>
-                    <th>Изображение</th>
-                    <th>Наименование</th>
-                    <th>Количество</th>
-                    <th>Цена за ед.</th>
-                    <th>Сумма</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php foreach ($items as $item): ?>
-                    <tr>
-                        <td>
-                            <?php if (!empty($item['main_image'])): ?>
-                                <img src="<?= htmlspecialchars($item['main_image']) ?>" alt="<?= htmlspecialchars($item['name']) ?>" class="rounded" style="width: 120px;">
-                            <?php else: ?>
-                                <img src="/assets/images/no-image.jpg" alt="Нет изображения" class="rounded" style="width: 120px;">
-                            <?php endif; ?>
-                        </td>
-                        <td><?= htmlspecialchars($item['name']) ?></td>
-                        <td><?= htmlspecialchars($item['quantity']) ?></td>
-                        <td><?= htmlspecialchars($item['price']) ?> ₽</td>
-                        <td><?= htmlspecialchars($item['quantity'] * $item['price']) ?> ₽</td>
-                    </tr>
-                <?php endforeach; ?>
-            </tbody>
-        </table>
+    <h4 class="mb-3">Товары в заказе</h4>
+    <table class="table table-hover align-middle">
+        <thead class="table-light">
+        <tr>
+            <th>Изображение</th>
+            <th>Наименование</th>
+            <th>Количество</th>
+            <th>Цена за ед.</th>
+            <th>Сумма</th>
+            <th>Отзыв</th>
+        </tr>
+        </thead>
+        <tbody>
+        <?php foreach ($items as $item): ?>
+            <tr>
+                <td>
+                    <img src="<?= htmlspecialchars($item['main_image'] ?: '/assets/images/no-image.jpg') ?>" 
+                         alt="<?= htmlspecialchars($item['name']) ?>" class="rounded" style="width: 120px;">
+                </td>
+                <td><?= htmlspecialchars($item['name']) ?></td>
+                <td><?= htmlspecialchars($item['quantity']) ?></td>
+                <td><?= htmlspecialchars($item['price']) ?> ₽</td>
+                <td><?= htmlspecialchars($item['quantity'] * $item['price']) ?> ₽</td>
+                <td>
+                    <?php if ($order['status'] === 'delivered'): ?>
+                        <?php if (in_array($item['product_id'], $reviewed)): ?>
+                            <span class="text-success">Отзыв оставлен</span>
+                        <?php else: ?>
+                            <form action="/pages/leave_review.php" method="POST">
+                                <input type="hidden" name="product_id" value="<?= htmlspecialchars($item['product_id']) ?>">
+                                <input type="hidden" name="order_id" value="<?= htmlspecialchars($order['id']) ?>">
+                                <button type="submit" class="btn btn-sm btn-outline-primary">
+                                    Оставить отзыв
+                                </button>
+                            </form>
+                        <?php endif; ?>
+                    <?php else: ?>
+                        <span class="text-muted">Доступно после доставки</span>
+                    <?php endif; ?>
+                </td>
+            </tr>
+        <?php endforeach; ?>
+        </tbody>
+    </table>
 
-        <div class="mt-4 text-end">
-            <a href="<?= htmlspecialchars($_SERVER['HTTP_REFERER']) ?>" class="btn btn-outline-secondary">
-                <i class="bi bi-arrow-left"></i> Назад 
-            </a>
-        </div>
-    </main>
+    <div class="mt-4 text-end">
+        <a href="<?= htmlspecialchars($_SERVER['HTTP_REFERER'] ?? '/pages/orders.php') ?>" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Назад
+        </a>
+    </div>
+</main>
 
-    <?php include __DIR__ . '/../includes/footer.php'; ?>
-
-    <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap @5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<?php include __DIR__ . '/../includes/footer.php'; ?>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

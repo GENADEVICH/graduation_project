@@ -12,12 +12,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $request_id = $_POST['request_id'] ?? null;
     $action = $_POST['action'] ?? null;
 
-    if ($request_id && in_array($action, ['approve', 'reject'])) {
+    $status_map = [
+        'approve' => 'approved',
+        'reject' => 'rejected'
+    ];
+
+    if ($request_id && isset($status_map[$action])) {
         try {
+            $new_status = $status_map[$action];
+
+            // Начинаем транзакцию для атомарности обновлений
+            $pdo->beginTransaction();
+
+            // Обновляем статус заявки в sellers
             $stmt = $pdo->prepare("UPDATE sellers SET status = ? WHERE id = ?");
-            $stmt->execute([$action, $request_id]);
+            $stmt->execute([$new_status, $request_id]);
+
+            if ($new_status === 'approved') {
+                // Получаем user_id из заявки
+                $stmt = $pdo->prepare("SELECT user_id FROM sellers WHERE id = ?");
+                $stmt->execute([$request_id]);
+                $user_id = $stmt->fetchColumn();
+
+                if ($user_id) {
+                    // Обновляем роль пользователя в users
+                    $stmt = $pdo->prepare("UPDATE users SET role = 'seller' WHERE id = ?");
+                    $stmt->execute([$user_id]);
+                }
+            }
+
+            $pdo->commit();
+
         } catch (PDOException $e) {
-            die("Ошибка при обновлении статуса: " . $e->getMessage());
+            $pdo->rollBack();
+            die("Ошибка при обновлении статуса и роли: " . $e->getMessage());
         }
     }
 
@@ -58,7 +86,7 @@ try {
 <!-- Navbar -->
 <nav class="navbar navbar-light bg-white shadow-sm mb-4">
     <div class="container-fluid">
-    <a class="navbar-brand fs-4" href="/admin/dashboard.php"><i class="bi bi-speedometer2 me-2"></i>Панель управления</a>
+        <a class="navbar-brand fs-4" href="/admin/dashboard.php"><i class="bi bi-speedometer2 me-2"></i>Панель управления</a>
         <a href="/pages/profile.php" class="btn btn-outline-danger">
             <i class="bi bi-box-arrow-right"></i> Выйти
         </a>
@@ -112,10 +140,10 @@ try {
                         <td>
                             <form method="POST" class="d-flex gap-2">
                                 <input type="hidden" name="request_id" value="<?= $req['id'] ?>">
-                                <button type="submit" name="action" value="approve" class="btn btn-success btn-sm">
+                                <button type="submit" name="action" value="approve" class="btn btn-success btn-sm" <?= $req['status'] === 'approved' ? 'disabled' : '' ?>>
                                     <i class="bi bi-check-circle"></i> Одобрить
                                 </button>
-                                <button type="submit" name="action" value="reject" class="btn btn-danger btn-sm">
+                                <button type="submit" name="action" value="reject" class="btn btn-danger btn-sm" <?= $req['status'] === 'rejected' ? 'disabled' : '' ?>>
                                     <i class="bi bi-x-circle"></i> Отклонить
                                 </button>
                             </form>

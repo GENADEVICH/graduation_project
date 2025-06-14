@@ -74,7 +74,7 @@ if (!function_exists('send_email')) {
             $mail->CharSet = 'UTF-8';                             // ОБЯЗАТЕЛЬНО!
 
             // Получатель
-            $mail->setFrom('support@akrapov1c.ru', 'MAXIM STROEV');
+            $mail->setFrom('support@akrapov1c.ru', 'Маркетплейс Lumi');
             $mail->addAddress($to);                               // Кому
 
             // Контент

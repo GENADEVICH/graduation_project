@@ -1,7 +1,4 @@
 <?php
-ini_set('display_errors', 1);
-error_reporting(E_ALL);
-
 session_start();
 require '../includes/db.php';
 require '../includes/functions.php';
@@ -40,6 +37,26 @@ if (!$role) {
 $stmt_orders = $pdo->prepare("SELECT * FROM orders WHERE buyer_id = ? ORDER BY order_date DESC");
 $stmt_orders->execute([$user_id]);
 $orders = $stmt_orders->fetchAll(PDO::FETCH_ASSOC);
+
+// Получаем id всех заказов для выборки товаров
+$order_ids = array_column($orders, 'id');
+$order_items = [];
+
+if (!empty($order_ids)) {
+    $placeholders = implode(',', array_fill(0, count($order_ids), '?'));
+    $stmt_items = $pdo->prepare("
+        SELECT oi.order_id, p.name 
+        FROM order_items oi
+        JOIN products p ON oi.product_id = p.id
+        WHERE oi.order_id IN ($placeholders)
+    ");
+    $stmt_items->execute($order_ids);
+    $items = $stmt_items->fetchAll(PDO::FETCH_ASSOC);
+
+    foreach ($items as $item) {
+        $order_items[$item['order_id']][] = $item['name'];
+    }
+}
 
 // Разделение заказов на актуальные и завершённые
 $active_orders = [];
@@ -90,7 +107,7 @@ foreach ($orders as $order) {
                     </div>
 
                     <!-- Информация о пользователе -->
-                    <p class="mb-2"><strong>Имя пользователя:</strong> <?= htmlspecialchars($user['username']) ?></p>
+                    <p class="mb-2"><strong>Имя пользователя:</strong> <?= htmlspecialchars($_SESSION['username'] ?? 'Гость') ?></p>
                     <p class="mb-2"><strong>Email:</strong> <?= htmlspecialchars($user['email']) ?></p>
 
                     <!-- Кнопки -->
@@ -102,18 +119,15 @@ foreach ($orders as $order) {
                     </a>
                     <?php if ($role === 'admin'): ?>
                         <a href="/admin/dashboard.php" class="btn btn-primary mb-2">
-                            <i class="bi bi-database"></i> admin
+                            <i class="bi bi-database"></i> Admin
                         </a>
                     <?php endif; ?>
 
                     <!-- Дополнительные действия -->
                     <div class="d-grid gap-2 col-10 mx-auto mt-3">
                         <?php if ($role === 'seller'): ?>
-                            <a href="/pages/my_products.php" class="btn btn-outline-success">
-                                <i class="bi bi-shop"></i> Мои товары
-                            </a>
-                            <a href="/pages/seller_orders.php" class="btn btn-outline-secondary">
-                                <i class="bi bi-receipt"></i> Заказы на мои товары
+                            <a href="/seller/dashboard.php" class="btn btn-primary mb-2">
+                                <i class="bi bi-shop"></i> Личный кабинет
                             </a>
                         <?php elseif ($role === 'buyer'): ?>
                             <a href="/pages/become_seller.php" class="btn btn-warning">
@@ -150,8 +164,9 @@ foreach ($orders as $order) {
                                     <?php foreach ($active_orders as $order): ?>
                                         <li class="list-group-item">
                                             <a href="/pages/order_details.php?id=<?= $order['id'] ?>">
-                                                Заказ #<?= htmlspecialchars($order['id']) ?> - <?= translateOrderStatus($order['status']) ?>
+                                                Заказ #<?= htmlspecialchars($order['order_number']) ?> - <?= translateOrderStatus($order['status']) ?>
                                             </a>
+                                            <br />
                                         </li>
                                     <?php endforeach; ?>
                                 </ul>
@@ -167,8 +182,9 @@ foreach ($orders as $order) {
                                     <?php foreach ($completed_orders as $order): ?>
                                         <li class="list-group-item">
                                             <a href="/pages/order_details.php?id=<?= $order['id'] ?>">
-                                                Заказ #<?= htmlspecialchars($order['id']) ?> - <?= translateOrderStatus($order['status']) ?>
+                                                Заказ #<?= htmlspecialchars($order['order_number']) ?> - <?= translateOrderStatus($order['status']) ?>
                                             </a>
+                                            <br />
                                         </li>
                                     <?php endforeach; ?>
                                 </ul>

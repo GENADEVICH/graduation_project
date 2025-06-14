@@ -116,7 +116,7 @@ foreach ($orders as $order) {
                                     <?php foreach ($active_orders as $order): ?>
                                         <li class="list-group-item">
                                             <a href="/pages/order_details.php?id=<?= $order['id'] ?>">
-                                                Заказ #<?= htmlspecialchars($order['id']) ?> - <?= translateStatus($order['status']) ?>
+                                                Заказ #<?= htmlspecialchars($order['order_number']) ?> - <?= translateStatus($order['status']) ?>
                                             </a>
                                         </li>
                                     <?php endforeach; ?>
@@ -133,7 +133,7 @@ foreach ($orders as $order) {
                                     <?php foreach ($completed_orders as $order): ?>
                                         <li class="list-group-item">
                                             <a href="/pages/order_details.php?id=<?= $order['id'] ?>">
-                                                Заказ #<?= htmlspecialchars($order['id']) ?> - <?= translateStatus($order['status']) ?>
+                                                Заказ #<?= htmlspecialchars($order['order_number']) ?> - <?= translateStatus($order['status']) ?>
                                             </a>
                                         </li>
                                     <?php endforeach; ?>
@@ -150,7 +150,7 @@ foreach ($orders as $order) {
                                     <?php foreach ($canceled_orders as $order): ?>
                                         <li class="list-group-item">
                                             <a href="/pages/order_details.php?id=<?= $order['id'] ?>">
-                                                Заказ #<?= htmlspecialchars($order['id']) ?> - <?= translateStatus($order['status']) ?>
+                                                Заказ #<?= htmlspecialchars($order['order_number']) ?> - <?= translateStatus($order['status']) ?>
                                             </a>
                                         </li>
                                     <?php endforeach; ?>

@@ -19,6 +19,7 @@ $success = '';
 // Обработка POST-запроса при отправке формы
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Получаем данные из формы
+    $store_name = trim($_POST['store_name'] ?? '');
     $country = $_POST['country'] ?? '';
     $business_form = $_POST['business_form'] ?? '';
     $inn = $_POST['inn'] ?? '';
@@ -26,6 +27,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email = $_POST['email'] ?? '';
 
     // Валидация данных
+    if (empty($store_name)) {
+        $errors[] = 'Введите имя магазина.';
+    }
     if (empty($country)) {
         $errors[] = 'Выберите страну регистрации.';
     }
@@ -50,9 +54,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (empty($errors)) {
         try {
             // Подготовленный запрос для вставки данных
-            $stmt = $pdo->prepare("INSERT INTO sellers (user_id, country, business_form, inn, activity_field, email) VALUES (?, ?, ?, ?, ?, ?)");
+            $stmt = $pdo->prepare("INSERT INTO sellers (user_id, store_name, country, business_form, inn, activity_field, email) VALUES (?, ?, ?, ?, ?, ?, ?)");
             $stmt->execute([
                 $_SESSION['user_id'],
+                $store_name,
                 $country,
                 $business_form,
                 $inn,
@@ -72,14 +77,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Стать продавцом</title>
 
     <!-- Bootstrap -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap @5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons @1.10.5/font/bootstrap-icons.css" rel="stylesheet">
-    <link rel="stylesheet" href="/assets/css/styles.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet" />
+    <link rel="stylesheet" href="/assets/css/styles.css" />
 </head>
 <body>
 <?php include __DIR__ . '/../includes/header.php'; ?>
@@ -107,14 +112,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <?php endif; ?>
 
             <form method="POST" action="/pages/become_seller.php">
+                <!-- Имя магазина -->
+                <div class="mb-3">
+                    <label for="store_name" class="form-label">Имя магазина</label>
+                    <input type="text" id="store_name" name="store_name" class="form-control" placeholder="Введите имя магазина" required value="<?= isset($store_name) ? htmlspecialchars($store_name) : '' ?>">
+                </div>
+
                 <!-- Страна регистрации -->
                 <div class="mb-3">
                     <label for="country" class="form-label">Страна регистрации</label>
                     <select id="country" name="country" class="form-select" required>
                         <option value="">Выберите страну</option>
-                        <option value="Россия" selected>Россия</option>
-                        <option value="Беларусь">Беларусь</option>
-                        <option value="Казахстан">Казахстан</option>
+                        <option value="Россия" <?= (isset($country) && $country === 'Россия') ? 'selected' : '' ?>>Россия</option>
+                        <option value="Беларусь" <?= (isset($country) && $country === 'Беларусь') ? 'selected' : '' ?>>Беларусь</option>
+                        <option value="Казахстан" <?= (isset($country) && $country === 'Казахстан') ? 'selected' : '' ?>>Казахстан</option>
                     </select>
                 </div>
 
@@ -123,9 +134,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <label for="business_form" class="form-label">Форма организации бизнеса</label>
                     <select id="business_form" name="business_form" class="form-select" required>
                         <option value="">Выберите форму</option>
-                        <option value="ИП" selected>Индивидуальный предприниматель (ИП)</option>
-                        <option value="ООО">Общество с ограниченной ответственностью (ООО)</option>
-                        <option value="УСН">Упрощённая система налогообложения (УСН)</option>
+                        <option value="ИП" <?= (isset($business_form) && $business_form === 'ИП') ? 'selected' : '' ?>>Индивидуальный предприниматель (ИП)</option>
+                        <option value="ООО" <?= (isset($business_form) && $business_form === 'ООО') ? 'selected' : '' ?>>Общество с ограниченной ответственностью (ООО)</option>
+                        <option value="УСН" <?= (isset($business_form) && $business_form === 'УСН') ? 'selected' : '' ?>>Упрощённая система налогообложения (УСН)</option>
                     </select>
                 </div>
 
@@ -134,7 +145,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <label for="inn" class="form-label">ИНН</label>
                     <input type="text" id="inn" name="inn" class="form-control" placeholder="Введите ИНН" 
                         maxlength="12" pattern="\d{10,12}" required
-                        oninput="this.value = this.value.replace(/[^0-9]/g, '');">
+                        oninput="this.value = this.value.replace(/[^0-9]/g, '');"
+                        value="<?= isset($inn) ? htmlspecialchars($inn) : '' ?>">
                     <small class="text-muted">ИНН должен состоять из 10 или 12 цифр.</small>
                 </div>
 
@@ -143,15 +155,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <label for="activity_field" class="form-label">Сфера деятельности на Ozon</label>
                     <select id="activity_field" name="activity_field" class="form-select" required>
                         <option value="">Выберите сферу</option>
-                        <option value="продавец_товаров">Продавец товаров</option>
-                        <option value="представитель_бренда">Представитель бренда</option>
+                        <option value="продавец_товаров" <?= (isset($activity_field) && $activity_field === 'продавец_товаров') ? 'selected' : '' ?>>Продавец товаров</option>
+                        <option value="представитель_бренда" <?= (isset($activity_field) && $activity_field === 'представитель_бренда') ? 'selected' : '' ?>>Представитель бренда</option>
                     </select>
                 </div>
 
                 <!-- Email для уведомлений -->
                 <div class="mb-3">
                     <label for="email" class="form-label">Email для уведомлений</label>
-                    <input type="email" id="email" name="email" class="form-control" placeholder="Введите email" required>
+                    <input type="email" id="email" name="email" class="form-control" placeholder="Введите email" required value="<?= isset($email) ? htmlspecialchars($email) : '' ?>">
                 </div>
 
                 <!-- Кнопки -->
@@ -164,6 +176,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </main>
 
 <!-- Bootstrap JS -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap @5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

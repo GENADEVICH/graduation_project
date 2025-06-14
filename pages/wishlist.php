@@ -88,10 +88,10 @@ $wishlistItems = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                     <?= htmlspecialchars($item['price']) ?> ₽
                                 </p>
                                 <div class="d-flex gap-2 mt-auto">
-                                    <a href="/pages/cart.php?action=add&id=<?= $item['id'] ?>" 
-                                       class="btn btn-outline-primary btn-sm flex-fill">
+                                    <a href="/pages/cart.php?action=add&id=<?= $item['id'] ?>" class="btn btn-outline-primary btn-sm flex-fill">
                                         <i class="bi bi-cart-plus me-1"></i> В корзину
                                     </a>
+
                                     <a href="/pages/wishlist.php?action=remove&id=<?= $item['id'] ?>" 
                                        class="btn btn-outline-danger btn-sm flex-fill">
                                         <i class="bi bi-trash me-1"></i> Удалить

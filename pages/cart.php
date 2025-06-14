@@ -9,6 +9,28 @@ if (!isLoggedIn()) {
 
 $user_id = $_SESSION['user_id'];
 
+// Обработка действий с корзиной
+$action = $_GET['action'] ?? null;
+$product_id = $_GET['id'] ?? null;
+
+if ($action === 'add' && $product_id) {
+    // Проверяем, есть ли уже такой товар в корзине
+    $stmt = $pdo->prepare("SELECT * FROM cart WHERE user_id = ? AND product_id = ?");
+    $stmt->execute([$user_id, $product_id]);
+    
+    if ($stmt->rowCount() > 0) {
+        // Увеличиваем количество
+        $pdo->prepare("UPDATE cart SET quantity = quantity + 1 WHERE user_id = ? AND product_id = ?")
+            ->execute([$user_id, $product_id]);
+    } else {
+        // Добавляем новый товар
+        $pdo->prepare("INSERT INTO cart (user_id, product_id, quantity) VALUES (?, ?, 1)")
+            ->execute([$user_id, $product_id]);
+    }
+
+    redirect('/pages/cart.php');
+}
+
 // Получаем содержимое корзины
 $stmt = $pdo->prepare("
     SELECT p.id, p.name, p.price, p.main_image, c.quantity
