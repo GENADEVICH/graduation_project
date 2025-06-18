@@ -84,10 +84,16 @@ function getWishlistCount($pdo, $userId) {
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
 
-        /* Отступ для основного контента */
         body {
-            padding-top: 80px;
-        }
+                padding-top: 80px;
+            }
+
+            @media (max-width: 767.98px) {
+                body {
+                    padding-top: 55px;
+                    margin-bottom: 80px; /* Чтобы нижнее меню не перекрывало контент */
+                }
+            }
 
         /* Прячем мобильный хедер на больших экранах */
         .mobile-header {
@@ -261,6 +267,14 @@ function getWishlistCount($pdo, $userId) {
 <nav class="bottom-nav d-md-none">
     <ul>
         <li><a href="/pages/home.php"><i class="bi bi-house-door"></i>Главная</a></li>
+        <!-- Добавленный пункт Каталог -->
+        <li>
+            <a href="/pages/categories.php"  aria-expanded="false">
+                <i class="bi bi-list"></i>
+                <span>Каталог</span>
+            </a>
+            <?php renderCategoryMenu($categoryTree); ?>
+        </li>
         <li>
             <a href="/pages/cart.php">
                 <i class="bi bi-cart-dash-fill"></i>

@@ -11,7 +11,7 @@ $user_id = $_SESSION['user_id'];
 
 // Получаем содержимое корзины
 $stmt = $pdo->prepare("
-    SELECT p.id, p.name, p.price, c.quantity
+    SELECT p.id, p.name, p.price, p.stock, c.quantity
     FROM cart c
     JOIN products p ON c.product_id = p.id
     WHERE c.user_id = ?
@@ -68,23 +68,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $orderNumber = $user_id . '-' . str_pad($nextOrderNumber, 4, '0', STR_PAD_LEFT);
 
             // Вставка заказа
+            $address = "Координаты: $delivery_lat, $delivery_lon";
             $stmt = $pdo->prepare("INSERT INTO orders (order_number, buyer_id, shipping_address, total_price, status) VALUES (?, ?, ?, ?, ?)");
-            $address = "Координаты: $delivery_lat, $delivery_lon"; // Можно заменить на реальный адрес через геокодирование
             $stmt->execute([$orderNumber, $user_id, $address, $total, 'pending']);
             $order_id = $pdo->lastInsertId();
 
-            // Вставка товаров
+            // Вставка товаров и уменьшение stock
             $stmt = $pdo->prepare("INSERT INTO order_items (order_id, product_id, quantity, price) VALUES (?, ?, ?, ?)");
+
             foreach ($cartItems as $item) {
+                // Проверяем наличие
+                $stmtCheck = $pdo->prepare("SELECT stock FROM products WHERE id = ?");
+                $stmtCheck->execute([$item['id']]);
+                $product = $stmtCheck->fetch(PDO::FETCH_ASSOC);
+
+                if (!$product || $product['stock'] < $item['quantity']) {
+                    $pdo->rollBack();
+                    $_SESSION['error_message'] = "Товар '{$item['name']}' временно недоступен или его не хватает на складе.";
+                    redirect('/pages/cart.php');
+                }
+
+                // Добавляем товар в заказ
                 $stmt->execute([$order_id, $item['id'], $item['quantity'], $item['price']]);
+
+                // Вычитаем из остатка
+                $pdo->prepare("UPDATE products SET stock = stock - ? WHERE id = ?")
+                    ->execute([$item['quantity'], $item['id']]);
             }
 
-            // Очищаем корзину пользователя
-            $stmt = $pdo->prepare("DELETE FROM cart WHERE user_id = ?");
-            $stmt->execute([$user_id]);
+            // Очищаем корзину
+            $pdo->prepare("DELETE FROM cart WHERE user_id = ?")->execute([$user_id]);
 
             $pdo->commit();
 
+            // Отправка чека на email
             ob_start();
             ?>
             <!DOCTYPE html>
@@ -166,12 +183,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <body>
             <div class="container">
                 <div class="header">
-                    <!-- Можно заменить на свой логотип -->
-                    <img src="https://cdn.discordapp.com/attachments/1218231417465606184/1382729356866224212/Group_2_1.png?ex=684c3690&is=684ae510&hm=f04e17003961132b8ee95e6b9d38c8d6b64c25c592a897cadef422964350fcbf&" alt="Логотип" class="logo">
+                    <img src="https://i.ibb.co/pjtbVKGh/Group-2-1.png"  alt="Логотип" class="logo">
                     <h2>Чек по заказу №<?=$orderNumber?></h2>
                     <p><strong>Дата:</strong> <?=date('d.m.Y H:i')?></p>
                 </div>
-
                 <div class="info">
                     <p><strong>Клиент:</strong> <?=$first_name?> <?=$last_name?></p>
                     <p><strong>Email:</strong> <?=$email?></p>
@@ -179,7 +194,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <?=$payment_method === 'card' ? 'Банковская карта' : 'Наличные курьеру'?>
                     </p>
                 </div>
-
                 <table>
                     <thead>
                     <tr>
@@ -200,13 +214,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <?php endforeach; ?>
                     </tbody>
                 </table>
-
                 <div class="total">
                     Итого: <?=number_format($total, 2, ',', ' ')?> ₽
                 </div>
-
                 <div class="footer">
-                    <p>© 2025 Ваш магазин. Все права защищены.</p>
+                    <p>© 2025 Lumi. Все права защищены.</p>
                     <p><a href="https://akrapov1c.ru/pages/order_details.php?id=<?=$order_id?>" class="btn">Посмотреть заказ</a></p>
                 </div>
             </div>
@@ -214,15 +226,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </html>
             <?php
             $mailBody = ob_get_clean();
-
             $subject = "Чек по заказу №$orderNumber";
-
-            if (!send_email($email, $subject, $mailBody)) {
-                error_log("Не удалось отправить чек на email: $email");
-            }
-            // --- Конец: Отправка чека на email ---
+            send_email($email, $subject, $mailBody);
 
             $success = true;
+
         } catch (Exception $e) {
             $pdo->rollBack();
             $errors[] = 'Ошибка при оформлении заказа: ' . $e->getMessage();
@@ -237,13 +245,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Оформление заказа</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"  rel="stylesheet" />
-    <script src="https://api-maps.yandex.ru/2.1/?apikey=ваш_ключ&lang=ru_RU" type="text/javascript"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <script src="https://api-maps.yandex.ru/2.1/?apikey=ваш_ключ&lang=ru_RU"></script>
     <style>
         #map { height: 400px; margin-bottom: 15px; } 
     </style>
 </head>
 <body>
+
 <?php include '../includes/header.php'; ?>
 
 <main class="container mt-4" style="max-width: 600px;">
@@ -252,80 +261,75 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <?php if ($success): ?>
         <div class="alert alert-success">
             Спасибо! Ваш заказ успешно оформлен.<br>
-            Номер вашего заказа: <strong><?=$orderNumber?></strong>
+            Номер вашего заказа: <strong><?= htmlspecialchars($orderNumber) ?></strong>
         </div>
         <a href="/pages/home.php" class="btn btn-primary">Вернуться к покупкам</a>
     <?php else: ?>
-
-        <?php if ($errors): ?>
+        <?php if (!empty($errors)): ?>
             <div class="alert alert-danger">
                 <ul>
                     <?php foreach ($errors as $error): ?>
-                        <li><?=htmlspecialchars($error)?></li>
+                        <li><?= htmlspecialchars($error) ?></li>
                     <?php endforeach; ?>
                 </ul>
             </div>
         <?php endif; ?>
-
-        <h5>Ваш заказ на сумму: <strong><?=number_format($total, 2, ',', ' ')?> ₽</strong></h5>
-
+        <h5>Ваш заказ на сумму: <strong><?= number_format($total, 2, ',', ' ') ?> ₽</strong></h5>
         <form method="post" novalidate>
             <div class="row mb-3">
                 <div class="col">
                     <label for="first_name" class="form-label">Имя</label>
-                    <input type="text" class="form-control" id="first_name" name="first_name" required value="<?=htmlspecialchars($_POST['first_name'] ?? $userData['first_name'] ?? '')?>">
+                    <input type="text" class="form-control" id="first_name" name="first_name" required value="<?= htmlspecialchars($_POST['first_name'] ?? $userData['first_name'] ?? '') ?>">
                 </div>
                 <div class="col">
                     <label for="last_name" class="form-label">Фамилия</label>
-                    <input type="text" class="form-control" id="last_name" name="last_name" required value="<?=htmlspecialchars($_POST['last_name'] ?? $userData['last_name'] ?? '')?>">
+                    <input type="text" class="form-control" id="last_name" name="last_name" required value="<?= htmlspecialchars($_POST['last_name'] ?? $userData['last_name'] ?? '') ?>">
                 </div>
             </div>
-
             <div class="mb-3">
                 <label for="email" class="form-label">Email</label>
-                <input type="email" class="form-control" id="email" name="email" required value="<?=htmlspecialchars($_POST['email'] ?? $userData['email'] ?? '')?>">
+                <input type="email" class="form-control" id="email" name="email" required value="<?= htmlspecialchars($_POST['email'] ?? $userData['email'] ?? '') ?>">
             </div>
-
             <div class="mb-3">
                 <label class="form-label">Выберите адрес доставки на карте</label>
                 <div id="map"></div>
-                <input type="hidden" id="delivery_lat" name="delivery_lat" required value="<?=htmlspecialchars($_POST['delivery_lat'] ?? $userData['delivery_lat'] ?? '')?>">
-                <input type="hidden" id="delivery_lon" name="delivery_lon" required value="<?=htmlspecialchars($_POST['delivery_lon'] ?? $userData['delivery_lon'] ?? '')?>">
+                <input type="hidden" id="delivery_lat" name="delivery_lat" required value="<?= htmlspecialchars($_POST['delivery_lat'] ?? $userData['delivery_lat'] ?? '') ?>">
+                <input type="hidden" id="delivery_lon" name="delivery_lon" required value="<?= htmlspecialchars($_POST['delivery_lon'] ?? $userData['delivery_lon'] ?? '') ?>">
             </div>
-
             <div class="mb-3">
                 <label class="form-label">Способ оплаты</label>
                 <select class="form-select" name="payment_method" required>
-                    <option value="" disabled <?=!isset($_POST['payment_method']) ? 'selected' : ''?>>Выберите способ оплаты</option>
-                    <option value="card" <?=($_POST['payment_method'] ?? '') === 'card' ? 'selected' : ''?>>Банковская карта</option>
-                    <option value="cash" <?=($_POST['payment_method'] ?? '') === 'cash' ? 'selected' : ''?>>Наличные курьеру</option>
+                    <option value="" disabled <?= !isset($_POST['payment_method']) ? 'selected' : '' ?>>Выберите способ оплаты</option>
+                    <option value="card" <?= ($_POST['payment_method'] ?? '') === 'card' ? 'selected' : '' ?>>Банковская карта</option>
+                    <option value="cash" <?= ($_POST['payment_method'] ?? '') === 'cash' ? 'selected' : '' ?>>Наличные курьеру</option>
                 </select>
             </div>
-
             <button type="submit" class="btn btn-success w-100">Подтвердить заказ</button>
             <a href="/pages/cart.php" class="btn btn-secondary w-100 mt-2">Вернуться в корзину</a>
         </form>
-
     <?php endif; ?>
 </main>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script> 
 
-<!-- Инициализация карты -->
+<!-- Яндекс Карты -->
 <script type="text/javascript">
     ymaps.ready(init);
     let myMap, myPlacemark;
 
     function init() {
-        const lat = <?=json_encode($userData['delivery_lat'] ?? 55.751574)?>;
-        const lon = <?=json_encode($userData['delivery_lon'] ?? 37.573856)?>;
+        const lat = <?= json_encode($userData['delivery_lat'] ?? 55.751574) ?>;
+        const lon = <?= json_encode($userData['delivery_lon'] ?? 37.573856) ?>;
 
         myMap = new ymaps.Map("map", {
             center: [lat, lon],
             zoom: 12
         });
 
-        myPlacemark = new ymaps.Placemark([lat, lon], {}, {draggable: true});
+        myPlacemark = new ymaps.Placemark([lat, lon], {}, {
+            draggable: true
+        });
+
         myMap.geoObjects.add(myPlacemark);
 
         myPlacemark.events.add('dragend', function () {

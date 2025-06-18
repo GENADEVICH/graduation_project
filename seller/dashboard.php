@@ -7,7 +7,12 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'seller') {
     exit; 
 }
 
-$seller_id = $_SESSION['user']['id']; // предполагается, что user id хранится в сессии
+$user_id = $_SESSION['user_id'];
+
+$stmt = $pdo->prepare("SELECT id FROM sellers WHERE user_id = ?");
+$stmt->execute([$user_id]);
+$seller_id = $stmt->fetchColumn();
+
 
 try {
     // Количество товаров продавца
@@ -38,7 +43,7 @@ try {
 
     // Последние 5 заказов с товарами продавца
     $stmt = $pdo->prepare("
-        SELECT o.id, o.order_date, o.status, SUM(oi.quantity * oi.price) as order_total
+        SELECT o.id, o.order_number, o.order_date, o.status, SUM(oi.quantity * oi.price) as order_total
         FROM orders o
         JOIN order_items oi ON oi.order_id = o.id
         JOIN products p ON p.id = oi.product_id
@@ -150,7 +155,7 @@ try {
                 <tbody>
                 <?php foreach ($recent_orders as $order): ?>
                     <tr>
-                        <td><?= htmlspecialchars($order['id']) ?></td>
+                        <td><?= htmlspecialchars($order['order_number']) ?></td>
                         <td><?= htmlspecialchars(date('d.m.Y H:i', strtotime($order['order_date']))) ?></td>
                         <td>
                             <?php
@@ -166,6 +171,9 @@ try {
                                     break;
                                 case 'cancelled':
                                     echo '<span class="badge bg-danger">Отменён</span>';
+                                    break;
+                                case 'delivered':
+                                    echo '<span class="badge bg-primary">Доставлен</span>';
                                     break;
                                 default:
                                     echo '<span class="badge bg-secondary">Неизвестно</span>';

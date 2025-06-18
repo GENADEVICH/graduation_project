@@ -116,44 +116,6 @@ try {
                 </div>
             </section>
         <?php endif; ?>
-
-        <!-- Горизонтальный слайдер брендов -->
-        <?php if (!empty($brands)): ?>
-            <section class="mb-4">
-                <h2 class="mb-3">Популярные бренды</h2>
-                <div id="brand-slider" class="carousel slide" data-bs-ride="carousel">
-                    <div class="carousel-inner">
-                        <?php $chunkedBrands = array_chunk($brands, 5); // Разделяем бренды на группы по 5 ?>
-                        <?php foreach ($chunkedBrands as $index => $brandChunk): ?>
-                            <div class="carousel-item <?= $index === 0 ? 'active' : '' ?>">
-                                <div class="d-flex gap-3">
-                                    <?php foreach ($brandChunk as $brand): ?>
-                                        <div class="brand-card text-center">
-                                            <a href="/pages/brand.php?id=<?= $brand['id'] ?>" class="text-decoration-none text-dark">
-                                                <?php if (!empty($brand['logo_url'])): ?>
-                                                    <img src="<?= htmlspecialchars($brand['logo_url']) ?>" alt="<?= htmlspecialchars($brand['name']) ?>" class="brand-logo rounded-3">
-                                                <?php else: ?>
-                                                    <img src="/assets/images/no-image.jpg" alt="Нет изображения" class="brand-logo rounded-3">
-                                                <?php endif; ?>
-                                                <p class="mt-2 mb-0"><?= htmlspecialchars($brand['name']) ?></p>
-                                            </a>
-                                        </div>
-                                    <?php endforeach; ?>
-                                </div>
-                            </div>
-                        <?php endforeach; ?>
-                    </div>
-                    <button class="carousel-control-prev" type="button" data-bs-target="#brand-slider" data-bs-slide="prev">
-                        <span class="carousel-control-prev-icon rounded-circle p-3" aria-hidden="true"></span>
-                        <span class="visually-hidden">Предыдущий</span>
-                    </button>
-                    <button class="carousel-control-next" type="button" data-bs-target="#brand-slider" data-bs-slide="next">
-                        <span class="carousel-control-next-icon rounded-circle p-3" aria-hidden="true"></span>
-                        <span class="visually-hidden">Следующий</span>
-                    </button>
-                </div>
-            </section>
-        <?php endif; ?>
     </main>
 
     <!-- Bootstrap JS и зависимости -->

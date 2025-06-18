@@ -137,6 +137,7 @@ try {
                         <td><?= number_format($order['total_price'], 2, ',', ' ') ?> ₽</td>
                         <td><?= htmlspecialchars($order['order_date']) ?></td>
                         <td>
+                            <a href="/admin/orders/order_view.php?id=<?= $order['id'] ?>" class="btn btn-sm btn-outline-primary" title="Просмотреть"><i class="bi bi-eye"></i></a>
                             <a href="/admin/orders/edit_order.php?id=<?= $order['id'] ?>" class="btn btn-sm btn-outline-primary me-2">
                                 <i class="bi bi-pencil"></i> Редактировать
                             </a>

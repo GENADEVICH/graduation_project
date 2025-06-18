@@ -156,3 +156,14 @@
 .bi {
     vertical-align: middle;
 }
+
+/* Кастомный класс для 5 карточек в строку на экранах от 768px */
+@media (min-width: 768px) {
+  .col-md-2-4 {
+    flex: 0 0 auto;
+    width: 20%;
+  }
+}
+.col-md-2-4 {
+  min-width: 180px; /* или 160px, по ситуации */
+}

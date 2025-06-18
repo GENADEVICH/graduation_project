@@ -170,6 +170,11 @@ try {
                     <i class="bi bi-diagram-3 me-2"></i>Категории
                 </a>
             </div>
+            <div class="col-md-3">
+                <a href="/admin/brands/brands_list.php" class="btn btn-outline-secondary w-100 p-3">
+                    <i class="bi bi-diagram-3 me-2"></i>Бренды
+                </a>
+            </div>
         </div>
     </div>
 

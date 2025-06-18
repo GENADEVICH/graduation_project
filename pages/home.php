@@ -51,6 +51,28 @@ try {
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
     <link rel="stylesheet" href="/assets/css/styles.css">
+    <style>
+        .product-image {
+            aspect-ratio: 4/3; /* или 1/1 для квадрата */
+            width: 100%;
+            object-fit: contain;
+            background-color: #fff;
+        }
+
+        .card-body {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            min-height: 180px;
+        }
+        
+        @media (max-width: 767.98px) {
+    #carouselExampleIndicators {
+        display: none;
+    }
+}
+
+    </style>
 </head>
 <body>
 <?php include __DIR__ . '/../includes/header.php'; ?>
@@ -86,44 +108,43 @@ try {
     </div>
 
     <!-- Секция товаров -->
-    <section class="products">
-        <h2 class="mb-3">Товары</h2>
-        <div id="product-list" class="row g-4">
-            <?php if (empty($products)): ?>
-                <div class="col-12 text-center">
-                    <p class="text-muted">Товары не найдены.</p>
-                </div>
-            <?php else: ?>
-                <?php foreach ($products as $product): ?>
-                    <div class="col-md-4 col-lg-3">
-                        <a href="/pages/product.php?id=<?= $product['id'] ?>" class="text-decoration-none text-dark">
-                            <div class="card h-100">
-                                <?php if (!empty($product['main_image'])): ?>
-                                    <img src="<?= htmlspecialchars($product['main_image']) ?>" alt="<?= htmlspecialchars($product['name']) ?>" class="card-img-top rounded-3">
+    <!-- Секция товаров -->
+<section class="products">
+    <h2 class="mb-3">Товары</h2>
+    <div id="product-list" class="row g-4">
+        <?php if (empty($products)): ?>
+            <div class="col-12 text-center">
+                <p class="text-muted">Товары не найдены.</p>
+            </div>
+        <?php else: ?>
+            <?php foreach ($products as $product): ?>
+                <div class="col-6 col-md-4 col-lg-3">
+                    <a href="/pages/product.php?id=<?= $product['id'] ?>" class="text-decoration-none text-dark">
+                        <div class="card h-100 shadow-sm border-0">
+                            <?php if (!empty($product['main_image'])): ?>
+                                <img src="<?= htmlspecialchars($product['main_image']) ?>" alt="<?= htmlspecialchars($product['name']) ?>" class="card-img-top rounded-3 product-image">
+                            <?php else: ?>
+                                <img src="/assets/images/no-image.jpg" alt="Нет изображения" class="card-img-top rounded-3 product-image">
+                            <?php endif; ?>
+                            <div class="card-body d-flex flex-column">
+                                <h5 class="card-title"><?= htmlspecialchars($product['name']) ?></h5>
+                                <p class="card-text"><strong></strong> <?= htmlspecialchars($product['price']) ?> ₽</p>
+                                <?php if ($product['review_count'] > 0): ?>
+                                    <div class="mb-1 text-warning">
+                                        <strong><?= $product['average_rating'] ?> ⭐</strong>
+                                        (<?= $product['review_count'] ?> отзывов)
+                                    </div>
                                 <?php else: ?>
-                                    <img src="/assets/images/no-image.jpg" alt="Нет изображения" class="card-img-top rounded-3">
+                                    <div class="mb-1 text-muted">Нет отзывов</div>
                                 <?php endif; ?>
-                                <div class="card-body d-flex flex-column">
-                                    <h5 class="card-title"><?= htmlspecialchars($product['name']) ?></h5>
-                                    <p class="card-text flex-grow-1"><?= htmlspecialchars($product['description']) ?></p>
-
-                                    <p class="card-text"><strong>Цена:</strong> <?= htmlspecialchars($product['price']) ?> руб.</p>
-                                    <?php if ($product['review_count'] > 0): ?>
-                                        <div class="mb-1 text-warning">
-                                            <strong><?= $product['average_rating'] ?> ⭐</strong>
-                                            (<?= $product['review_count'] ?> отзывов)
-                                        </div>
-                                    <?php else: ?>
-                                        <div class="mb-1 text-muted">Нет отзывов</div>
-                                    <?php endif; ?>
-                                </div>
                             </div>
-                        </a>
-                    </div>
-                <?php endforeach; ?>
-            <?php endif; ?>
-        </div>
-    </section>
+                        </div>
+                    </a>
+                </div>
+            <?php endforeach; ?>
+        <?php endif; ?>
+    </div>
+</section>
 </main>
 
 <!-- Bootstrap JS -->

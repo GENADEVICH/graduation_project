@@ -41,11 +41,15 @@ try {
 
     // Получаем существующие отзывы пользователя для этих товаров
     $productIds = array_column($items, 'product_id');
-    $placeholders = implode(',', array_fill(0, count($productIds), '?'));
-    $stmt = $pdo->prepare("SELECT product_id FROM reviews 
-                           WHERE user_id = ? AND product_id IN ($placeholders)");
-    $stmt->execute(array_merge([$_SESSION['user']['id']], $productIds));
-    $reviewed = $stmt->fetchAll(PDO::FETCH_COLUMN, 0);
+    if (count($productIds) > 0) {
+        $placeholders = implode(',', array_fill(0, count($productIds), '?'));
+        $stmt = $pdo->prepare("SELECT product_id FROM reviews 
+                               WHERE user_id = ? AND product_id IN ($placeholders)");
+        $stmt->execute(array_merge([$_SESSION['user']['id']], $productIds));
+        $reviewed = $stmt->fetchAll(PDO::FETCH_COLUMN, 0);
+    } else {
+        $reviewed = [];
+    }
 
 } catch (PDOException $e) {
     die("Ошибка при выполнении запроса: " . $e->getMessage());
@@ -70,11 +74,33 @@ $statusInfo = getOrderStatus($order['status']);
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Детали заказа #<?= htmlspecialchars($order['id']) ?></title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
     <link rel="stylesheet" href="/assets/css/styles.css">
+
+    <style>
+        /* Мобильная адаптация таблицы товаров */
+        @media (max-width: 767.98px) {
+            table.order-table {
+                display: none;
+            }
+            .mobile-product-card {
+                display: block;
+                margin-bottom: 1rem;
+                border: 1px solid #dee2e6;
+                border-radius: .25rem;
+                padding: 1rem;
+                box-shadow: 0 0 5px rgba(0,0,0,.05);
+            }
+        }
+        @media (min-width: 768px) {
+            .mobile-product-card {
+                display: none;
+            }
+        }
+    </style>
 </head>
 <body>
 <?php include __DIR__ . '/../includes/header.php'; ?>
@@ -95,7 +121,9 @@ $statusInfo = getOrderStatus($order['status']);
     </div>
 
     <h4 class="mb-3">Товары в заказе</h4>
-    <table class="table table-hover align-middle">
+
+    <!-- Таблица для десктопа -->
+    <table class="table table-hover align-middle order-table">
         <thead class="table-light">
         <tr>
             <th>Изображение</th>
@@ -110,7 +138,7 @@ $statusInfo = getOrderStatus($order['status']);
         <?php foreach ($items as $item): ?>
             <tr>
                 <td>
-                    <img src="<?= htmlspecialchars($item['main_image'] ?: '/assets/images/no-image.jpg') ?>" 
+                    <img src="<?= htmlspecialchars($item['main_image'] ?: '/assets/images/no-image.jpg') ?>"
                          alt="<?= htmlspecialchars($item['name']) ?>" class="rounded" style="width: 120px;">
                 </td>
                 <td><?= htmlspecialchars($item['name']) ?></td>
@@ -139,10 +167,45 @@ $statusInfo = getOrderStatus($order['status']);
         </tbody>
     </table>
 
+    <!-- Карточки для мобильных -->
+    <?php foreach ($items as $item): ?>
+        <div class="mobile-product-card d-md-none">
+            <div class="d-flex">
+                <img src="<?= htmlspecialchars($item['main_image'] ?: '/assets/images/no-image.jpg') ?>"
+                     alt="<?= htmlspecialchars($item['name']) ?>" class="rounded me-3" style="width: 100px; height: auto;">
+                <div>
+                    <h5><?= htmlspecialchars($item['name']) ?></h5>
+                    <p>Количество: <strong><?= htmlspecialchars($item['quantity']) ?></strong></p>
+                    <p>Цена за ед.: <strong><?= htmlspecialchars($item['price']) ?> ₽</strong></p>
+                    <p>Сумма: <strong><?= htmlspecialchars($item['quantity'] * $item['price']) ?> ₽</strong></p>
+
+                    <p>
+                    <?php if ($order['status'] === 'delivered'): ?>
+                        <?php if (in_array($item['product_id'], $reviewed)): ?>
+                            <span class="text-success">Отзыв оставлен</span>
+                        <?php else: ?>
+                            <form action="/pages/leave_review.php" method="POST" class="mb-0">
+                                <input type="hidden" name="product_id" value="<?= htmlspecialchars($item['product_id']) ?>">
+                                <input type="hidden" name="order_id" value="<?= htmlspecialchars($order['id']) ?>">
+                                <button type="submit" class="btn btn-sm btn-outline-primary">
+                                    Оставить отзыв
+                                </button>
+                            </form>
+                        <?php endif; ?>
+                    <?php else: ?>
+                        <span class="text-muted">Доступно после доставки</span>
+                    <?php endif; ?>
+                    </p>
+                </div>
+            </div>
+        </div>
+    <?php endforeach; ?>
+
     <div class="mt-4 text-end">
-        <a href="<?= htmlspecialchars($_SERVER['HTTP_REFERER'] ?? '/pages/orders.php') ?>" class="btn btn-outline-secondary">
+        <a href="/pages/orders.php" class="btn btn-outline-secondary">
             <i class="bi bi-arrow-left"></i> Назад
         </a>
+
     </div>
 </main>
 

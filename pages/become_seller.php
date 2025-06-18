@@ -152,7 +152,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 <!-- Сфера деятельности -->
                 <div class="mb-3">
-                    <label for="activity_field" class="form-label">Сфера деятельности на Ozon</label>
+                    <label for="activity_field" class="form-label">Сфера деятельности на Lumi</label>
                     <select id="activity_field" name="activity_field" class="form-select" required>
                         <option value="">Выберите сферу</option>
                         <option value="продавец_товаров" <?= (isset($activity_field) && $activity_field === 'продавец_товаров') ? 'selected' : '' ?>>Продавец товаров</option>

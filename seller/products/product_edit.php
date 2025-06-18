@@ -3,11 +3,16 @@ session_start();
 require '../../includes/db.php';
 require '../../includes/functions.php';
 
-// Проверка авторизации администратора
-if (!isset($_SESSION['user_id']) || !isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
+if (!isset($_SESSION['user_id']) || !isset($_SESSION['role']) || $_SESSION['role'] !== 'seller') {
     header('Location: /pages/login.php');
     exit;
 }
+
+$user_id = $_SESSION['user_id'];
+
+$stmt = $pdo->prepare("SELECT id FROM sellers WHERE user_id = ?");
+$stmt->execute([$user_id]);
+$seller_id = $stmt->fetchColumn();
 
 $product_id = $_GET['id'] ?? null;
 
@@ -21,6 +26,11 @@ if (!$product) {
     include '../includes/header.php';
     echo "<div class='container mt-5'><h2>Товар не найден</h2></div></body></html>";
     exit;
+}
+
+// Защита от редактирования чужих товаров
+if ($product['seller_id'] != $seller_id) {
+    die("Вы не можете редактировать чужой товар.");
 }
 
 // Если форма отправлена
@@ -49,22 +59,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         // Обработка нового основного изображения
         if (isset($_FILES['main_image']) && $_FILES['main_image']['error'] === UPLOAD_ERR_OK) {
-            $uploadDir = '../../uploads/products/';
-            if (!is_dir($uploadDir)) {
-                mkdir($uploadDir, 0755, true); // Создаём папку, если её нет
-            }
-
-            $ext = strtolower(pathinfo($_FILES['main_image']['name'], PATHINFO_EXTENSION));
-            $allowedExtensions = ['jpg', 'jpeg', 'png', 'gif'];
-            if (!in_array($ext, $allowedExtensions)) {
-                die("Запрещённый формат изображения.");
-            }
-
-            $filename = uniqid('img_', true) . '.' . $ext;
-            $uploadFile = $uploadDir . $filename;
+            $uploadDir = '../../assets/images/';
+            $uploadFile = $uploadDir . uniqid('img_') . '_' . basename($_FILES['main_image']['name']);
 
             if (move_uploaded_file($_FILES['main_image']['tmp_name'], $uploadFile)) {
-                // Обновляем путь к изображению в БД
                 $stmt = $pdo->prepare("UPDATE products SET main_image = ? WHERE id = ?");
                 $stmt->execute([$uploadFile, $product_id]);
             } else {
@@ -76,7 +74,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $_SESSION['success_message'] = "Товар успешно обновлен.";
 
         // Перенаправление после сохранения
-        header("Location: edit_product.php?id=$product_id");
+        header("Location: product_edit.php?id=$product_id");
         exit;
     } catch (PDOException $e) {
         die("Ошибка при обновлении товара: " . $e->getMessage());
@@ -97,7 +95,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 <nav class="navbar navbar-light bg-white shadow-sm mb-4">
     <div class="container-fluid">
-        <a class="navbar-brand fs-4" href="/admin/dashboard.php"><i class="bi bi-speedometer2 me-2"></i>Панель администратора</a>
+        <a class="navbar-brand fs-4" href="/seller/dashboard.php"><i class="bi bi-shop-window me-2"></i>Панель продавца</a>
         <a href="/pages/profile.php" class="btn btn-outline-danger"><i class="bi bi-box-arrow-right"></i> Выйти</a>
     </div>
 </nav>
@@ -147,7 +145,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             <div class="col-12 mt-4">
                 <button type="submit" class="btn btn-primary">Сохранить изменения</button>
-                <a href="/admin/products/products_list.php" class="btn btn-secondary">Назад</a>
+                <a href="products_list.php" class="btn btn-secondary">Назад</a>
             </div>
         </div>
     </form>

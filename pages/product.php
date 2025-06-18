@@ -36,44 +36,45 @@ if ($product_id) {
     }
 
     // Получаем характеристики из новых таблиц
-    $stmt = $pdo->prepare("
-        SELECT 
-            c.name AS attribute_name, 
-            c.value_type,
-            pc.value_string,
-            pc.value_integer,
-            pc.value_decimal,
-            pc.value_boolean
-        FROM product_characteristics pc
-        JOIN characteristics c ON pc.characteristic_id = c.id
-        WHERE pc.product_id = ?
-    ");
-    $stmt->execute([$product_id]);
-    $rawAttributes = $stmt->fetchAll(PDO::FETCH_ASSOC);
+  $stmt = $pdo->prepare("
+    SELECT 
+        c.name AS attribute_name, 
+        c.value_type,
+        pc.value_string,
+        pc.value_integer,
+        pc.value_decimal,
+        pc.value_boolean
+    FROM product_characteristics pc
+    JOIN characteristics c ON pc.characteristic_id = c.id
+    WHERE pc.product_id = ?
+");
+$stmt->execute([$product_id]);
+$rawAttributes = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    $attributes = [];
-    foreach ($rawAttributes as $row) {
-        switch ($row['value_type']) {
-            case 'string':
-                $value = $row['value_string'];
-                break;
-            case 'integer':
-                $value = $row['value_integer'];
-                break;
-            case 'decimal':
-                $value = $row['value_decimal'];
-                break;
-            case 'boolean':
-                $value = $row['value_boolean'] ? 'Да' : 'Нет';
-                break;
-            default:
-                $value = null;
-        }
-
-        if ($value !== null && $value !== '') {
-            $attributes[$row['attribute_name']] = $value;
-        }
+$attributes = [];
+foreach ($rawAttributes as $row) {
+    switch ($row['value_type']) {
+        case 'string':
+            $value = $row['value_string'];
+            break;
+        case 'integer':
+            $value = $row['value_integer'];
+            break;
+        case 'decimal':
+            $value = $row['value_decimal'];
+            break;
+        case 'boolean':
+            $value = $row['value_boolean'] ? 'Да' : 'Нет';
+            break;
+        default:
+            $value = null;
     }
+
+    if ($value !== null && $value !== '') {
+        $attributes[$row['attribute_name']] = $value;
+    }
+}
+
 
     // Получаем отзывы покупателей
     $stmt = $pdo->prepare("
@@ -111,12 +112,12 @@ if ($product_id) {
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= htmlspecialchars($product['name']) ?></title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet" />
-    <link rel="stylesheet" href="/assets/css/styles.css" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="stylesheet" href="/assets/css/styles.css">
 </head>
 <body>
 
@@ -124,16 +125,15 @@ if ($product_id) {
 
 <main class="container mt-4 mb-5">
     <div class="row g-4">
-        <!-- Левая колонка: Галерея и продавец -->
+        <!-- Галерея изображений -->
         <div class="col-md-6">
-            <!-- Галерея изображений -->
             <div class="image-gallery mb-3 border rounded overflow-hidden shadow-sm position-relative" style="height: 450px;">
                 <img src="<?= htmlspecialchars($product['main_image'] ?? '/assets/images/no-image.jpg') ?>" 
                     alt="<?= htmlspecialchars($product['name']) ?>" 
                     class="w-100 h-100 object-fit-contain bg-light" id="mainImage">
             </div>
             
-            <div class="d-flex justify-content-center gap-2 flex-wrap mt-2 mb-4">
+            <div class="d-flex justify-content-center gap-2 flex-wrap mt-2">
                 <?php if (!empty($images)): ?>
                     <?php foreach ($images as $image): ?>
                         <img src="<?= htmlspecialchars($image) ?>" 
@@ -151,28 +151,8 @@ if ($product_id) {
                     <?php endfor; ?>
                 <?php endif; ?>
             </div>
-
-            <!-- Информация о продавце -->
-            <div class="card mb-4 shadow-sm">
-                <div class="card-header bg-white py-3">
-                    <h5 class="mb-0">Продавец</h5>
-                </div>
-                <div class="card-body">
-                    <div class="d-flex align-items-center">
-                        <div class="avatar me-3">
-                            <img src="/assets/images/default-avatar.png" alt="Аватар продавца" class="rounded-circle" style="width: 40px; height: 40px;" />
-                        </div>
-                        <div>
-                            <h6 class="mb-1">Home life SHOP</h6>
-                            <p class="text-muted mb-1">Перейти в магазин</p>
-                        </div>
-                    </div>
-                    <a href="#" class="btn btn-primary btn-sm">Написать в магазин</a>
-                </div>
-            </div>
-        </div>
-
-        <!-- Правая колонка: Описание товара, характеристики и отзывы -->
+    </div>
+        <!-- Описание товара -->
         <div class="col-md-6">
             <h1 class="mb-3"><?= htmlspecialchars($product['name']) ?></h1>
 
@@ -211,8 +191,8 @@ if ($product_id) {
                 <button class="btn btn-lg px-3 add-to-wishlist <?= $isInWishlist ? 'btn-danger' : 'btn-outline-danger' ?>" data-product-id="<?= $product['id'] ?>">
                     <i class="bi <?= $isInWishlist ? 'bi-heart-fill text-white' : 'bi-heart' ?>"></i>
                 </button>
-                <button class="btn btn-outline-secondary btn-lg px-3">
-                    <i class="bi bi-share"></i>
+                <button class="btn btn-outline-secondary btn-lg px-3" onclick="shareProduct(event)">
+                    <i class="bi bi-share me-2"></i>
                 </button>
             </div>
 
@@ -234,7 +214,7 @@ if ($product_id) {
                     <?php endif; ?>
                 </div>
             </div>
-
+            
             <!-- Отзывы -->
             <div class="card mb-4 shadow-sm">
                 <div class="card-header bg-white py-3">
@@ -251,12 +231,12 @@ if ($product_id) {
                                             <i class="bi bi-star-fill <?= $i <= $review['rating'] ? 'text-warning' : 'text-muted' ?>"></i>
                                         <?php endfor; ?>
                                     </p>
-                                    <p><?= nl2br(htmlspecialchars($review['comment'])) ?></p>
+                                    <p class="mb-0"><?= htmlspecialchars($review['comment']) ?></p>
                                 </div>
                             </div>
                         <?php endforeach; ?>
                     <?php else: ?>
-                        <p class="text-muted">Пока нет отзывов.</p>
+                        <p class="text-muted">Отзывов пока нет.</p>
                     <?php endif; ?>
                 </div>
             </div>
@@ -264,60 +244,166 @@ if ($product_id) {
     </div>
 </main>
 
-<?php include '../includes/footer.php'; ?>
-
 <script>
-function changeMainImage(src) {
-    document.getElementById('mainImage').src = src;
-}
-
-// Добавление в корзину
 document.querySelectorAll('.add-to-cart').forEach(button => {
-    button.addEventListener('click', () => {
-        const productId = button.dataset.productId;
-        fetch('/ajax/add_to_cart.php', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ product_id: productId })
-        }).then(res => res.json())
-          .then(data => {
-            if (data.success) {
-                alert('Товар добавлен в корзину!');
-            } else {
-                alert('Ошибка при добавлении товара.');
-            }
-          });
-    });
-});
+    button.addEventListener('click', function () {
+        const productId = this.dataset.productId;
+        const originalText = this.innerHTML;
 
-// Добавление/удаление из избранного
-document.querySelectorAll('.add-to-wishlist').forEach(button => {
-    button.addEventListener('click', () => {
-        const productId = button.dataset.productId;
-        fetch('/ajax/toggle_wishlist.php', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ product_id: productId })
-        }).then(res => res.json())
-          .then(data => {
-            if (data.success) {
-                button.classList.toggle('btn-danger');
-                button.classList.toggle('btn-outline-danger');
-                const icon = button.querySelector('i');
-                if (icon.classList.contains('bi-heart')) {
-                    icon.classList.remove('bi-heart');
-                    icon.classList.add('bi-heart-fill', 'text-white');
+        // Отправляем AJAX-запрос
+        fetch('../api/add_to_cart_ajax.php?id=' + productId)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    this.innerHTML = '<i class="bi bi-check-circle me-2"></i>Добавлено';
+                    this.disabled = true;
+
+                    // Через 3 секунды возвращаем исходный вид
+                    setTimeout(() => {
+                        this.innerHTML = originalText;
+                        this.disabled = false;
+                    }, 3000);
+
+                    // Опционально: обновить количество в корзине в интерфейсе
+                    updateCartCount(1);
                 } else {
-                    icon.classList.remove('bi-heart-fill', 'text-white');
-                    icon.classList.add('bi-heart');
+                    alert(data.message || 'Ошибка при добавлении товара');
                 }
-            } else {
-                alert('Ошибка при обновлении избранного.');
-            }
-          });
+            })
+            .catch(error => {
+                console.error('Ошибка:', error);
+                alert('Произошла ошибка при добавлении товара в корзину.');
+            });
     });
 });
 </script>
 
+<script>
+document.querySelectorAll('.add-to-wishlist').forEach(button => {
+    button.addEventListener('click', function (e) {
+        e.preventDefault();
+        const productId = this.dataset.productId;
+        const icon = this.querySelector('i');
+        const isAdding = icon.classList.contains('bi-heart'); // если пустое сердце — значит добавляем
+
+        fetch('/api/add_to_wishlist_ajax.php?id=' + productId, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ remove: !isAdding })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                if (isAdding) {
+                    icon.classList.remove('bi-heart');
+                    icon.classList.add('bi-heart-fill', 'text-white');
+                    this.classList.remove('btn-outline-danger');
+                    this.classList.add('btn-danger');
+                    updateWishlistCount(1);
+                } else {
+                    icon.classList.remove('bi-heart-fill', 'text-white');
+                    icon.classList.add('bi-heart');
+                    this.classList.remove('btn-danger');
+                    this.classList.add('btn-outline-danger');
+                    updateWishlistCount(-1);
+                }
+            } else {
+                alert(data.message || 'Ошибка при изменении избранного');
+            }
+        })
+        .catch(error => {
+            console.error('Ошибка:', error);
+            alert('Произошла ошибка при изменении избранного.');
+        });
+    });
+});
+
+
+
+
+
+function updateWishlistCount(delta) {
+    const badge = document.querySelector('a[href="/pages/wishlist.php"] .badge');
+    if (badge) {
+        let current = parseInt(badge.textContent) || 0;
+        badge.textContent = current + delta;
+    }
+}
+</script>
+<script>
+    function changeMainImage(src) {
+        document.getElementById('mainImage').src = src;
+    }
+
+    function updateCartCount(delta) {
+    const cartBadge = document.querySelector('a[href="/pages/cart.php"] .badge');
+    if (cartBadge) {
+        let current = parseInt(cartBadge.textContent) || 0;
+        cartBadge.textContent = current + delta;
+    }
+}
+</script>
+
+<script>
+function shareProduct(event) {
+    event.preventDefault();
+
+    const productId = <?= $product['id'] ?>;
+    const productUrl = window.location.origin + '/pages/product.php?id=' + productId;
+
+    // Пытаемся скопировать через Clipboard API
+    navigator.clipboard.writeText(productUrl)
+        .then(() => {
+            showTooltip('Ссылка скопирована!', 'success');
+        })
+        .catch(() => {
+            // Альтернативный способ (для мобильных или старых браузеров)
+            const textArea = document.createElement('textarea');
+            textArea.value = productUrl;
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textArea);
+            showTooltip('Ссылка скопирована (через буфер)', 'warning');
+        });
+}
+
+// Всплывающее уведомление
+function showTooltip(message, type = 'info') {
+    let tooltip = document.getElementById('custom-tooltip');
+
+    if (!tooltip) {
+        tooltip = document.createElement('div');
+        tooltip.id = 'custom-tooltip';
+        tooltip.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            border-radius: 5px;
+            color: white;
+            z-index: 10000;
+            font-weight: bold;
+            font-size: 1rem;
+            transition: opacity 0.3s ease;
+        `;
+        document.body.appendChild(tooltip);
+    }
+
+    tooltip.textContent = message;
+    tooltip.style.backgroundColor =
+        type === 'success' ? '#28a745' :
+        type === 'warning' ? '#ffc107' :
+        '#007bff';
+
+    tooltip.style.opacity = '1';
+
+    setTimeout(() => {
+        tooltip.style.opacity = '0';
+    }, 2500);
+}
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

@@ -6,13 +6,28 @@ if (!isset($_SESSION['user_id']) || !isset($_SESSION['role']) || $_SESSION['role
     header('Location: /pages/login.php');
     exit;
 }
-$seller_id = $_SESSION['user_id'];
+$user_id = $_SESSION['user_id'];
+
+$stmt = $pdo->prepare("SELECT id FROM sellers WHERE user_id = ?");
+$stmt->execute([$user_id]);
+$seller_id = $stmt->fetchColumn();
+
+
+// Массив русских названий статусов
+$status_labels = [
+    'pending' => 'В ожидании',
+    'processing' => 'В обработке',
+    'shipped' => 'Отправлен',
+    'delivered' => 'Доставлен',
+    'cancelled' => 'Отменён',
+];
 
 try {
     // Получаем заказы, где есть товары этого продавца
     $stmt = $pdo->prepare("
         SELECT DISTINCT
             o.id,
+            o.order_number,
             o.buyer_id,
             o.order_date,
             o.status,
@@ -39,6 +54,7 @@ try {
     <title>Заказы продавца</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css"  rel="stylesheet">
 </head>
 <body>
 
@@ -58,7 +74,7 @@ try {
         <table class="table table-striped align-middle">
             <thead>
                 <tr>
-                    <th>ID заказа</th>
+                    <th>Номер заказа</th>
                     <th>Покупатель</th>
                     <th>Дата заказа</th>
                     <th>Статус</th>
@@ -69,10 +85,10 @@ try {
             <tbody>
                 <?php foreach ($orders as $order): ?>
                     <tr>
-                        <td><?= htmlspecialchars($order['id']) ?></td>
+                        <td><?= htmlspecialchars($order['order_number']) ?></td>
                         <td><?= htmlspecialchars($order['buyer_name']) ?></td>
                         <td><?= date('d.m.Y H:i', strtotime($order['order_date'])) ?></td>
-                        <td><?= htmlspecialchars($order['status']) ?></td>
+                        <td><?= htmlspecialchars($status_labels[$order['status']] ?? $order['status']) ?></td>
                         <td><?= number_format($order['total_price'], 2, ',', ' ') ?> ₽</td>
                         <td>
                             <a href="/seller/orders/order_view.php?id=<?= $order['id'] ?>" class="btn btn-primary btn-sm">Просмотр</a>

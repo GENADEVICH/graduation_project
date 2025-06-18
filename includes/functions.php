@@ -66,7 +66,7 @@ if (!function_exists('send_email')) {
             $mail->Host       = 'ssl://smtp.spaceweb.ru';         // Сервер от SpaceWeb
             $mail->SMTPAuth   = true;                             // Включить аутентификацию
             $mail->Username   = 'support@akrapov1c.ru';           // Твой email
-            $mail->Password   = 'HSV5DYGZCgVZC@DA';               // Пароль от почты
+            $mail->Password   = 'YR6wV$V7DXQWBKP5';               // Пароль от почты
             $mail->SMTPSecure = 'ssl';                            // SSL-шифрование
             $mail->Port       = 465;                              // Порт для SSL
 
@@ -161,6 +161,26 @@ if (!function_exists('addToWishlist')) {
             }
         } catch (PDOException $e) {
             return ['error' => 'Ошибка базы данных: ' . $e->getMessage()];
+        }
+    }
+}
+
+/**
+ * Получает товар по его ID
+ */
+if (!function_exists('getProductById')) {
+    function getProductById($pdo, $product_id) {
+        if (!$product_id) {
+            return false;
+        }
+
+        try {
+            $stmt = $pdo->prepare("SELECT * FROM products WHERE id = ?");
+            $stmt->execute([$product_id]);
+            return $stmt->fetch(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("Ошибка при получении товара: " . $e->getMessage());
+            return false;
         }
     }
 }

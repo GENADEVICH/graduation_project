@@ -194,6 +194,21 @@ foreach ($orders as $order) {
                 </div>
             </div>
         </div>
+    <!-- Блок поддержки -->
+<div class="card mt-4">
+    <div class="card-body">
+        <h5 class="card-title"><i class="bi bi-life-preserver"></i> Техническая поддержка</h5>
+        <p class="card-text">Если у вас возникли вопросы или проблемы, свяжитесь с нашей службой поддержки:</p>
+        <ul class="list-unstyled">
+            <li><i class="bi bi-envelope"></i> <strong>Email:</strong> <a href="mailto:support@akrapov1c.ru">support@akrapov1c.ru</a></li>
+            <li><i class="bi bi-clock"></i> <strong>Время работы:</strong> Пн–Пт с 9:00 до 18:00</li>
+        </ul>
+        <a href="/pages/support_form.php" class="btn btn-outline-primary mt-2">
+            <i class="bi bi-chat-dots"></i> Написать в поддержку
+        </a>
+    </div>
+</div>
+
     </div>
 </main>
 

@@ -95,6 +95,11 @@ try {
                             <a href="/admin/users/edit_user.php?id=<?= $user['id'] ?>" class="btn btn-sm btn-outline-primary me-2">
                                 <i class="bi bi-pencil"></i> Редактировать
                             </a>
+
+                            <a href="/admin/users/toggle_block.php?id=<?= $user['id'] ?>" class="btn btn-sm btn-outline-warning me-2">
+                                <?= $user['is_blocked'] ? '<i class="bi bi-unlock"></i> Разблокировать' : '<i class="bi bi-lock"></i> Заблокировать' ?>
+                            </a>
+
                             <a href="#" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteModal<?= $user['id'] ?>">
                                 <i class="bi bi-trash"></i> Удалить
                             </a>

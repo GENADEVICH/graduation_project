@@ -71,6 +71,11 @@ try {
             <?php endif; ?>
         </div>
     </form>
+    <div class="mt-3">
+                <a href="/admin/products/product_add.php" class="btn btn-success">
+                    <i class="bi bi-plus-lg"></i> Добавить товар
+                </a>
+            </div>
 
     <?php if (empty($products)): ?>
         <div class="alert alert-info">Нет товаров<?= $search ? ' по вашему запросу' : '' ?>.</div>
@@ -126,13 +131,6 @@ try {
             </tbody>
         </table>
     <?php endif; ?>
-
-    <!-- Кнопка добавления товара -->
-    <div class="mt-3">
-        <a href="/admin/products/product_add.php" class="btn btn-success">
-            <i class="bi bi-plus-lg"></i> Добавить товар
-        </a>
-    </div>
 </div>
 
 <!-- Bootstrap JS -->
